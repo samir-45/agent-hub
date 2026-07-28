@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "OpenRouter Model Manager"
+version = "1.0.0"
+id = "artifacts/model-manager"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19606
+
+[services.development]
+run = "pnpm --filter @workspace/model-manager run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/model-manager", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/model-manager/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19606"
+BASE_PATH = "/"
