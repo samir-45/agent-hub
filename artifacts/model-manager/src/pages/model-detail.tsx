@@ -29,6 +29,11 @@ import {
   Loader2,
   ChevronRight,
   Globe,
+  Eye,
+  EyeOff,
+  RefreshCw,
+  ExternalLink,
+  Monitor,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +54,8 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ModelForm } from '@/components/model-form';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
+import { extractPreview } from '@/lib/extract-preview';
 import type { ModelInput } from '@workspace/api-client-react';
 
 type Message = {
@@ -72,6 +79,9 @@ export default function ModelDetail() {
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [searchingQuery, setSearchingQuery] = useState<string | null>(null);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const previewIframeRef = useRef<HTMLIFrameElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: model, isLoading: modelLoading } = useGetModel(modelId);
@@ -253,6 +263,12 @@ export default function ModelDetail() {
                 }
                 return next;
               });
+              // Auto-extract preview from completed AI message
+              const preview = extractPreview(fullContent);
+              if (preview) {
+                setPreviewHtml(preview);
+                setShowPreview(true);
+              }
             }
           } catch {}
         }
@@ -429,7 +445,9 @@ export default function ModelDetail() {
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'chat' | 'config')}>
             <TabsContent value="chat" className="mt-0 h-full">
               {activeConvId ? (
-                <div className="flex flex-col h-[calc(100vh-200px)]">
+                <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-200px)]">
+                  <ResizablePanel defaultSize={50} minSize={30}>
+                    <div className="flex flex-col h-full">
                   <ScrollArea className="flex-1 pr-4">
                     <div className="space-y-4 pb-4">
                       {messages.length === 0 && (
@@ -491,7 +509,7 @@ export default function ModelDetail() {
                   </ScrollArea>
 
                   <div className="shrink-0 pt-4 border-t border-border mt-4">
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-end">
                       <Textarea
                         placeholder="Type a message… (Enter to send, Shift+Enter for newline)"
                         value={inputText}
@@ -503,10 +521,20 @@ export default function ModelDetail() {
                         data-testid="input-message"
                       />
                       <Button
+                        onClick={() => setShowPreview((p) => !p)}
+                        size="icon"
+                        variant={showPreview ? 'default' : 'outline'}
+                        title={showPreview ? 'Hide preview' : 'Show preview'}
+                        className="shrink-0"
+                      >
+                        {showPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                      <Button
                         onClick={handleSend}
                         disabled={!inputText.trim() || isSending}
                         size="icon"
                         data-testid="button-send"
+                        className="shrink-0"
                       >
                         {isSending ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -516,7 +544,81 @@ export default function ModelDetail() {
                       </Button>
                     </div>
                   </div>
-                </div>
+                    </div>
+                  </ResizablePanel>
+
+                  {showPreview && (
+                    <>
+                      <ResizableHandle withHandle />
+                      <ResizablePanel defaultSize={50} minSize={20}>
+                        <div className="flex flex-col h-full border-l border-border">
+                          {/* Preview header */}
+                          <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0 bg-muted/30">
+                            <div className="flex items-center gap-2">
+                              <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span className="text-xs font-medium text-foreground">Preview</span>
+                              {previewHtml && (
+                                <span className="text-xs text-muted-foreground">· live</span>
+                              )}
+                            </div>
+                            <div className="flex gap-1">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6"
+                                onClick={() => {
+                                  if (previewIframeRef.current && previewHtml) {
+                                    previewIframeRef.current.srcdoc = previewHtml;
+                                  }
+                                }}
+                                disabled={!previewHtml}
+                                title="Refresh preview"
+                              >
+                                <RefreshCw className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6"
+                                onClick={() => {
+                                  if (!previewHtml) return;
+                                  const blob = new Blob([previewHtml], { type: 'text/html' });
+                                  const url = URL.createObjectURL(blob);
+                                  window.open(url, '_blank');
+                                }}
+                                disabled={!previewHtml}
+                                title="Open in new tab"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Preview content */}
+                          {previewHtml ? (
+                            <iframe
+                              ref={previewIframeRef}
+                              srcDoc={previewHtml}
+                              className="flex-1 w-full"
+                              sandbox="allow-scripts"
+                              title="Live Preview"
+                            />
+                          ) : (
+                            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3 p-8 text-center">
+                              <Monitor className="h-12 w-12 opacity-20" />
+                              <div>
+                                <p className="text-sm font-medium mb-1">No preview yet</p>
+                                <p className="text-xs opacity-70">
+                                  Ask the AI to build something — HTML, CSS, JS, or a React component will appear here automatically.
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </ResizablePanel>
+                    </>
+                  )}
+                </ResizablePanelGroup>
               ) : (
                 <Card className="border-dashed border-2 h-[calc(100vh-200px)] flex items-center justify-center">
                   <CardContent className="flex flex-col items-center text-center p-8">
