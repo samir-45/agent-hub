@@ -174,16 +174,45 @@ router.post("/models/:modelId/conversations/:id/messages", async (req, res): Pro
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
+  // Signal: context loaded, about to call the model
+  res.write(`data: ${JSON.stringify({ stage: "preparing" })}\n\n`);
+
   let fullResponse = "";
+
+  /** Stream one OpenRouter SSE stream, emitting reasoning + content events. */
+  async function pipeStream(stream: AsyncIterable<any>) {
+    let generatingSignalSent = false;
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta as any;
+
+      // Reasoning tokens (deepseek-r1 and other thinking models)
+      if (delta?.reasoning) {
+        if (!generatingSignalSent) {
+          res.write(`data: ${JSON.stringify({ stage: "generating" })}\n\n`);
+          generatingSignalSent = true;
+        }
+        res.write(`data: ${JSON.stringify({ reasoning: delta.reasoning })}\n\n`);
+      }
+
+      // Regular content tokens
+      if (delta?.content) {
+        if (!generatingSignalSent) {
+          res.write(`data: ${JSON.stringify({ stage: "generating" })}\n\n`);
+          generatingSignalSent = true;
+        }
+        fullResponse += delta.content;
+        res.write(`data: ${JSON.stringify({ content: delta.content })}\n\n`);
+      }
+    }
+  }
 
   try {
     const openrouter = await getOpenRouterClient();
 
     if (model.webSearchEnabled) {
       // ── Pre-search: fetch web results and inject as context ────────────────
-      // Search using the user's latest message as the query.
       const userQuery = parsed.data.content;
-      res.write(`data: ${JSON.stringify({ searching: true, query: userQuery })}\n\n`);
+      res.write(`data: ${JSON.stringify({ stage: "searching", query: userQuery })}\n\n`);
 
       let searchContext = "";
       try {
@@ -193,15 +222,12 @@ router.post("/models/:modelId/conversations/:id/messages", async (req, res): Pro
         req.log.warn({ searchErr }, "Tavily search failed — continuing without web results");
       }
 
-      // Inject search results as a system message right before the conversation
       const messagesWithSearch: { role: "system" | "user" | "assistant"; content: string }[] = [];
 
-      // Preserve the model's original system prompt (if any)
       if (model.systemPrompt) {
         messagesWithSearch.push({ role: "system", content: model.systemPrompt });
       }
 
-      // Inject web results with a strong directive the model cannot ignore
       if (searchContext) {
         messagesWithSearch.push({
           role: "system",
@@ -222,12 +248,10 @@ router.post("/models/:modelId/conversations/:id/messages", async (req, res): Pro
         });
       }
 
-      // Add conversation history (excluding the initial system prompt we already added)
       for (const m of history) {
         messagesWithSearch.push({ role: m.role as "user" | "assistant", content: m.content });
       }
 
-      // Stream the response with web context injected
       const stream = await openrouter.chat.completions.create({
         model: model.modelId,
         max_tokens: model.maxTokens,
@@ -237,13 +261,7 @@ router.post("/models/:modelId/conversations/:id/messages", async (req, res): Pro
         stream: true,
       });
 
-      for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content;
-        if (content) {
-          fullResponse += content;
-          res.write(`data: ${JSON.stringify({ content })}\n\n`);
-        }
-      }
+      await pipeStream(stream);
     } else {
       // ── Standard streaming (no web search) ──────────────────────────────────
       const stream = await openrouter.chat.completions.create({
@@ -255,13 +273,7 @@ router.post("/models/:modelId/conversations/:id/messages", async (req, res): Pro
         stream: true,
       });
 
-      for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content;
-        if (content) {
-          fullResponse += content;
-          res.write(`data: ${JSON.stringify({ content })}\n\n`);
-        }
-      }
+      await pipeStream(stream);
     }
 
     // Persist assistant message

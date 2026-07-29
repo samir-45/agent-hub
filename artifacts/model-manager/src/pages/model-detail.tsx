@@ -78,7 +78,9 @@ export default function ModelDetail() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [currentStage, setCurrentStage] = useState<string>('');
   const [searchingQuery, setSearchingQuery] = useState<string | null>(null);
+  const [reasoningText, setReasoningText] = useState('');
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
@@ -203,7 +205,9 @@ export default function ModelDetail() {
     setInputText('');
     setMessages((prev) => [...prev, { role: 'user', content: userContent }]);
     setIsSending(true);
+    setCurrentStage('preparing');
     setSearchingQuery(null);
+    setReasoningText('');
 
     // Add streaming placeholder
     setMessages((prev) => [...prev, { role: 'assistant', content: '', streaming: true }]);
@@ -238,10 +242,21 @@ export default function ModelDetail() {
           const payload = line.slice(6);
           try {
             const json = JSON.parse(payload);
+            if (json.stage) {
+              setCurrentStage(json.stage);
+              if (json.stage === 'searching') setSearchingQuery(json.query ?? '…');
+              if (json.stage === 'generating') setSearchingQuery(null);
+            }
+            // legacy compat
             if (json.searching === true) {
+              setCurrentStage('searching');
               setSearchingQuery(json.query ?? '…');
             }
+            if (json.reasoning) {
+              setReasoningText((prev) => prev + json.reasoning);
+            }
             if (json.content) {
+              setCurrentStage('generating');
               setSearchingQuery(null);
               fullContent += json.content;
               setMessages((prev) => {
@@ -290,6 +305,7 @@ export default function ModelDetail() {
       });
     } finally {
       setIsSending(false);
+      setCurrentStage('');
       setSearchingQuery(null);
     }
   };
@@ -446,7 +462,7 @@ export default function ModelDetail() {
             <TabsContent value="chat" className="mt-0 h-full">
               {activeConvId ? (
                 <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-200px)]">
-                  <ResizablePanel defaultSize={50} minSize={30}>
+                  <ResizablePanel id="chat" order={1} defaultSize={showPreview ? 50 : 100} minSize={30}>
                     <div className="flex flex-col h-full">
                   <ScrollArea className="flex-1 pr-4">
                     <div className="space-y-4 pb-4">
@@ -489,17 +505,42 @@ export default function ModelDetail() {
                                 )}
                               </div>
                             ) : msg.streaming ? (
-                              searchingQuery ? (
-                                <span className="inline-flex items-center gap-1.5">
-                                  <Globe className="h-3 w-3 animate-pulse text-sky-500" />
-                                  <span className="text-xs opacity-70">Searching: <em>{searchingQuery}</em></span>
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1">
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                  <span className="text-xs opacity-70">Thinking…</span>
-                                </span>
-                              )
+                              <div className="space-y-2 min-w-[180px]">
+                                {/* Stage progress indicator */}
+                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                  {currentStage === 'searching' ? (
+                                    <>
+                                      <Globe className="h-3 w-3 animate-pulse text-sky-500 shrink-0" />
+                                      <span>Searching: <em>{searchingQuery}</em></span>
+                                    </>
+                                  ) : currentStage === 'generating' ? (
+                                    <>
+                                      <span className="inline-flex gap-0.5">
+                                        <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:0ms]" />
+                                        <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:150ms]" />
+                                        <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:300ms]" />
+                                      </span>
+                                      <span>Generating…</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Loader2 className="h-3 w-3 animate-spin shrink-0" />
+                                      <span>Preparing context…</span>
+                                    </>
+                                  )}
+                                </div>
+                                {/* Reasoning tokens (thinking models) */}
+                                {reasoningText && (
+                                  <details open className="text-xs">
+                                    <summary className="cursor-pointer select-none text-muted-foreground opacity-70 hover:opacity-100 flex items-center gap-1">
+                                      <span>Thinking</span>
+                                    </summary>
+                                    <pre className="mt-1.5 whitespace-pre-wrap font-mono text-[11px] leading-relaxed opacity-60 max-h-48 overflow-y-auto border-l-2 border-border pl-2">
+                                      {reasoningText}
+                                    </pre>
+                                  </details>
+                                )}
+                              </div>
                             ) : null}
                           </div>
                         </div>
@@ -550,7 +591,7 @@ export default function ModelDetail() {
                   {showPreview && (
                     <>
                       <ResizableHandle withHandle />
-                      <ResizablePanel defaultSize={50} minSize={20}>
+                      <ResizablePanel id="preview" order={2} defaultSize={50} minSize={20}>
                         <div className="flex flex-col h-full border-l border-border">
                           {/* Preview header */}
                           <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0 bg-muted/30">
