@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
 import { db, modelsTable, conversations, messages } from "@workspace/db";
-import { openrouter } from "@workspace/integrations-openrouter-ai";
+import { getOpenRouterClient } from "../../lib/openrouter-client";
 import {
   ListModelConversationsParams,
   ListModelConversationsResponse,
@@ -176,6 +176,7 @@ router.post("/models/:modelId/conversations/:id/messages", async (req, res): Pro
   let fullResponse = "";
 
   try {
+    const openrouter = await getOpenRouterClient();
     const stream = await openrouter.chat.completions.create({
       model: model.modelId,
       max_tokens: model.maxTokens,

@@ -13,6 +13,8 @@
     "@workspace/api-zod": "workspace:*",
     "@workspace/db": "workspace:*",
     "@workspace/integrations-openrouter-ai": "workspace:*",
+    "openai": "^6.27.0",
+    "zod": "catalog:",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "drizzle-orm": "catalog:",

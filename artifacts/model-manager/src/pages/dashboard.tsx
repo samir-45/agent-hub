@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
 import { useGetStats, useListModels } from '@workspace/api-client-react';
-import { Activity, Plus, Zap, MessageSquare, Database } from 'lucide-react';
+import { Activity, Plus, Zap, MessageSquare, Database, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -24,12 +24,19 @@ export default function Dashboard() {
                 OpenRouter Configuration Cockpit
               </p>
             </div>
-            <Link href="/models/new">
-              <Button data-testid="button-add-model" className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Model
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link href="/settings">
+                <Button variant="ghost" size="icon" data-testid="button-settings" title="Settings">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href="/models/new">
+                <Button data-testid="button-add-model" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Model
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>

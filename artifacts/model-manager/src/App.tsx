@@ -5,6 +5,7 @@ import NotFound from '@/pages/not-found';
 import Dashboard from '@/pages/dashboard';
 import AddModel from '@/pages/add-model';
 import ModelDetail from '@/pages/model-detail';
+import Settings from '@/pages/settings';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
 
 const queryClient = new QueryClient({
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/models/new" component={AddModel} />
       <Route path="/models/:id" component={ModelDetail} />
+      <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
   );
