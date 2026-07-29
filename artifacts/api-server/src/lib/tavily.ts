@@ -1,95 +1,56 @@
-import { db, settingsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
-import { decrypt } from "./encryption";
-
-export type TavilyResult = {
+export interface TavilyResult {
   title: string;
   url: string;
   content: string;
   score: number;
-};
+}
 
-type TavilyResponse = {
-  results: TavilyResult[];
+export interface TavilySearchResponse {
   answer?: string;
-};
-
-// Short-lived cache for the Tavily key
-let cachedKey: string | null = null;
-let cacheExpiry = 0;
-const CACHE_TTL_MS = 60_000;
-
-export function invalidateTavilyKeyCache(): void {
-  cachedKey = null;
-  cacheExpiry = 0;
+  results: TavilyResult[];
 }
 
-async function getTavilyApiKey(): Promise<string | null> {
-  if (cachedKey && Date.now() < cacheExpiry) return cachedKey;
-
-  try {
-    const [row] = await db
-      .select()
-      .from(settingsTable)
-      .where(eq(settingsTable.key, "tavily_api_key"));
-
-    if (row) {
-      const key = decrypt(row.encryptedValue, row.iv, row.authTag);
-      cachedKey = key;
-      cacheExpiry = Date.now() + CACHE_TTL_MS;
-      return key;
-    }
-  } catch {}
-
-  // Fall back to env var
-  return process.env.TAVILY_API_KEY ?? null;
-}
-
-export async function tavilySearch(
-  query: string,
-  maxResults = 5
-): Promise<TavilyResult[]> {
-  const apiKey = await getTavilyApiKey();
-  if (!apiKey) throw new Error("Tavily API key not configured");
+/**
+ * Search the web via Tavily and return formatted context for the model.
+ */
+export async function tavilySearch(query: string): Promise<string> {
+  const apiKey = process.env.TAVILY_API_KEY;
+  if (!apiKey) {
+    throw new Error("TAVILY_API_KEY is not set. Add it as a secret to enable web search.");
+  }
 
   const response = await fetch("https://api.tavily.com/search", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      api_key: apiKey,
       query,
-      max_results: maxResults,
       search_depth: "basic",
-      include_answer: false,
+      max_results: 5,
+      include_answer: true,
     }),
   });
 
   if (!response.ok) {
-    const text = await response.text();
+    const text = await response.text().catch(() => "");
     throw new Error(`Tavily search failed (${response.status}): ${text}`);
   }
 
-  const data: TavilyResponse = await response.json();
-  return data.results ?? [];
-}
+  const data = (await response.json()) as TavilySearchResponse;
 
-export const WEB_SEARCH_TOOL = {
-  type: "function" as const,
-  function: {
-    name: "web_search",
-    description:
-      "Search the web for current information, recent news, real-time data, prices, or anything that requires up-to-date knowledge beyond the training cutoff.",
-    parameters: {
-      type: "object",
-      properties: {
-        query: {
-          type: "string",
-          description: "The search query to look up",
-        },
-      },
-      required: ["query"],
-    },
-  },
-};
+  const parts: string[] = [];
+
+  if (data.answer) {
+    parts.push(`Summary: ${data.answer}`);
+    parts.push("");
+  }
+
+  for (const result of data.results) {
+    parts.push(`Source: ${result.title}`);
+    parts.push(`URL: ${result.url}`);
+    parts.push(result.content);
+    parts.push("");
+  }
+
+  return parts.join("\n").trim();
+}

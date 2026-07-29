@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
 import { db, modelsTable, conversations, messages } from "@workspace/db";
 import { getOpenRouterClient } from "../../lib/openrouter-client";
+import { tavilySearch } from "../../lib/tavily";
 import {
   ListModelConversationsParams,
   ListModelConversationsResponse,
@@ -177,20 +178,119 @@ router.post("/models/:modelId/conversations/:id/messages", async (req, res): Pro
 
   try {
     const openrouter = await getOpenRouterClient();
-    const stream = await openrouter.chat.completions.create({
-      model: model.modelId,
-      max_tokens: model.maxTokens,
-      temperature: model.temperature,
-      top_p: model.topP,
-      messages: chatMessages,
-      stream: true,
-    });
 
-    for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content;
-      if (content) {
-        fullResponse += content;
-        res.write(`data: ${JSON.stringify({ content })}\n\n`);
+    if (model.webSearchEnabled) {
+      // ── Phase 1: non-streaming call with web_search tool ──────────────────
+      const webSearchTool = {
+        type: "function" as const,
+        function: {
+          name: "web_search",
+          description:
+            "Search the web for current information, recent events, news, prices, or any real-time data that may not be in your training data.",
+          parameters: {
+            type: "object",
+            properties: {
+              query: { type: "string", description: "The search query to look up" },
+            },
+            required: ["query"],
+          },
+        },
+      };
+
+      const firstResponse = await openrouter.chat.completions.create({
+        model: model.modelId,
+        max_tokens: model.maxTokens,
+        temperature: model.temperature,
+        top_p: model.topP,
+        messages: chatMessages,
+        tools: [webSearchTool],
+        tool_choice: "auto",
+        stream: false,
+      });
+
+      const firstChoice = firstResponse.choices[0];
+
+      if (
+        firstChoice.finish_reason === "tool_calls" &&
+        firstChoice.message.tool_calls?.length
+      ) {
+        // ── Phase 2: execute tool calls ──────────────────────────────────────
+        const toolResults: { role: "tool"; tool_call_id: string; content: string }[] = [];
+
+        for (const toolCall of firstChoice.message.tool_calls) {
+          if (toolCall.function.name === "web_search") {
+            let args: { query?: string };
+            try {
+              args = JSON.parse(toolCall.function.arguments) as { query?: string };
+            } catch {
+              args = {};
+            }
+            const query = args.query ?? parsed.data.content;
+            res.write(`data: ${JSON.stringify({ searching: true, query })}\n\n`);
+
+            let searchContent: string;
+            try {
+              searchContent = await tavilySearch(query);
+            } catch (searchErr) {
+              req.log.warn({ searchErr }, "Tavily search failed");
+              searchContent = `Search failed: ${searchErr instanceof Error ? searchErr.message : String(searchErr)}`;
+            }
+
+            toolResults.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              content: searchContent,
+            });
+          }
+        }
+
+        // ── Phase 3: stream final response with search results ───────────────
+        const messagesWithTools = [
+          ...chatMessages,
+          firstChoice.message,
+          ...toolResults,
+        ];
+
+        const stream = await openrouter.chat.completions.create({
+          model: model.modelId,
+          max_tokens: model.maxTokens,
+          temperature: model.temperature,
+          top_p: model.topP,
+          messages: messagesWithTools,
+          stream: true,
+        });
+
+        for await (const chunk of stream) {
+          const content = chunk.choices[0]?.delta?.content;
+          if (content) {
+            fullResponse += content;
+            res.write(`data: ${JSON.stringify({ content })}\n\n`);
+          }
+        }
+      } else {
+        // Model chose not to search — use the response we already have
+        fullResponse = firstChoice.message.content ?? "";
+        if (fullResponse) {
+          res.write(`data: ${JSON.stringify({ content: fullResponse })}\n\n`);
+        }
+      }
+    } else {
+      // ── Standard streaming (no web search) ──────────────────────────────────
+      const stream = await openrouter.chat.completions.create({
+        model: model.modelId,
+        max_tokens: model.maxTokens,
+        temperature: model.temperature,
+        top_p: model.topP,
+        messages: chatMessages,
+        stream: true,
+      });
+
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+          fullResponse += content;
+          res.write(`data: ${JSON.stringify({ content })}\n\n`);
+        }
       }
     }
 

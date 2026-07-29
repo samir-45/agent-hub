@@ -28,6 +28,7 @@ import {
   User,
   Loader2,
   ChevronRight,
+  Globe,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -70,6 +71,7 @@ export default function ModelDetail() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [searchingQuery, setSearchingQuery] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: model, isLoading: modelLoading } = useGetModel(modelId);
@@ -191,6 +193,7 @@ export default function ModelDetail() {
     setInputText('');
     setMessages((prev) => [...prev, { role: 'user', content: userContent }]);
     setIsSending(true);
+    setSearchingQuery(null);
 
     // Add streaming placeholder
     setMessages((prev) => [...prev, { role: 'assistant', content: '', streaming: true }]);
@@ -225,7 +228,11 @@ export default function ModelDetail() {
           const payload = line.slice(6);
           try {
             const json = JSON.parse(payload);
+            if (json.searching === true) {
+              setSearchingQuery(json.query ?? '…');
+            }
             if (json.content) {
+              setSearchingQuery(null);
               fullContent += json.content;
               setMessages((prev) => {
                 const next = [...prev];
@@ -237,6 +244,7 @@ export default function ModelDetail() {
               });
             }
             if (json.done) {
+              setSearchingQuery(null);
               setMessages((prev) => {
                 const next = [...prev];
                 const last = next[next.length - 1];
@@ -266,6 +274,7 @@ export default function ModelDetail() {
       });
     } finally {
       setIsSending(false);
+      setSearchingQuery(null);
     }
   };
 
@@ -462,10 +471,17 @@ export default function ModelDetail() {
                                 )}
                               </div>
                             ) : msg.streaming ? (
-                              <span className="inline-flex items-center gap-1">
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                                <span className="text-xs opacity-70">Thinking…</span>
-                              </span>
+                              searchingQuery ? (
+                                <span className="inline-flex items-center gap-1.5">
+                                  <Globe className="h-3 w-3 animate-pulse text-sky-500" />
+                                  <span className="text-xs opacity-70">Searching: <em>{searchingQuery}</em></span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1">
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                  <span className="text-xs opacity-70">Thinking…</span>
+                                </span>
+                              )
                             ) : null}
                           </div>
                         </div>

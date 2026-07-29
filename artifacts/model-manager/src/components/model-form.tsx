@@ -25,6 +25,7 @@ const modelFormSchema = z.object({
   systemPrompt: z.string().optional(),
   topP: z.number().min(0).max(1),
   enabled: z.boolean(),
+  webSearchEnabled: z.boolean(),
 });
 
 type ModelFormValues = z.infer<typeof modelFormSchema>;
@@ -53,6 +54,7 @@ export function ModelForm({
       systemPrompt: defaultValues?.systemPrompt ?? '',
       topP: defaultValues?.topP ?? 1.0,
       enabled: defaultValues?.enabled ?? true,
+      webSearchEnabled: defaultValues?.webSearchEnabled ?? false,
     },
   });
 
@@ -66,6 +68,7 @@ export function ModelForm({
       systemPrompt: values.systemPrompt || undefined,
       topP: values.topP,
       enabled: values.enabled,
+      webSearchEnabled: values.webSearchEnabled,
     });
   });
 
@@ -127,6 +130,18 @@ export function ModelForm({
               data-testid="switch-enabled"
               checked={form.watch('enabled')}
               onCheckedChange={(val) => form.setValue('enabled', val)}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="webSearchEnabled" className="text-sm font-medium">Web Search</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">Let the model search the web via Tavily when needed</p>
+            </div>
+            <Switch
+              id="webSearchEnabled"
+              data-testid="switch-web-search"
+              checked={form.watch('webSearchEnabled')}
+              onCheckedChange={(val) => form.setValue('webSearchEnabled', val)}
             />
           </div>
         </CardContent>
