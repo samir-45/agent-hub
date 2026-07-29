@@ -18,6 +18,7 @@ export interface Model {
   systemPrompt: string | null;
   topP: number;
   enabled: boolean;
+  webSearchEnabled: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

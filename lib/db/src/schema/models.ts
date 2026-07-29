@@ -12,6 +12,7 @@ export const modelsTable = pgTable("models", {
   systemPrompt: text("system_prompt"),
   topP: real("top_p").notNull().default(1.0),
   enabled: boolean("enabled").notNull().default(true),
+  webSearchEnabled: boolean("web_search_enabled").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

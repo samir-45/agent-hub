@@ -32,6 +32,7 @@ export interface Model {
   systemPrompt: string | null;
   topP: number;
   enabled: boolean;
+  webSearchEnabled: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -56,6 +57,7 @@ export interface ModelInput {
      */
   topP?: number;
   enabled?: boolean;
+  webSearchEnabled?: boolean;
 }
 
 export interface ModelUpdate {
@@ -78,6 +80,7 @@ export interface ModelUpdate {
      */
   topP?: number;
   enabled?: boolean;
+  webSearchEnabled?: boolean;
 }
 
 export interface Conversation {

@@ -26,4 +26,5 @@ export interface ModelUpdate {
      */
   topP?: number;
   enabled?: boolean;
+  webSearchEnabled?: boolean;
 }

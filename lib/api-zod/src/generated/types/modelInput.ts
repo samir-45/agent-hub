@@ -26,4 +26,5 @@ export interface ModelInput {
      */
   topP?: number;
   enabled?: boolean;
+  webSearchEnabled?: boolean;
 }

@@ -41,6 +41,7 @@ export const ListModelsResponseItem = zod.object({
   "systemPrompt": zod.string().nullable(),
   "topP": zod.number(),
   "enabled": zod.boolean(),
+  "webSearchEnabled": zod.boolean(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -69,7 +70,8 @@ export const CreateModelBody = zod.object({
   "maxTokens": zod.number().min(1).optional(),
   "systemPrompt": zod.string().optional(),
   "topP": zod.number().min(createModelBodyTopPMin).max(createModelBodyTopPMax).optional(),
-  "enabled": zod.boolean().optional()
+  "enabled": zod.boolean().optional(),
+  "webSearchEnabled": zod.boolean().optional()
 })
 
 export const CreateModelResponse = zod.object({
@@ -82,6 +84,7 @@ export const CreateModelResponse = zod.object({
   "systemPrompt": zod.string().nullable(),
   "topP": zod.number(),
   "enabled": zod.boolean(),
+  "webSearchEnabled": zod.boolean(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -104,6 +107,7 @@ export const GetModelResponse = zod.object({
   "systemPrompt": zod.string().nullable(),
   "topP": zod.number(),
   "enabled": zod.boolean(),
+  "webSearchEnabled": zod.boolean(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -135,7 +139,8 @@ export const UpdateModelBody = zod.object({
   "maxTokens": zod.number().min(1).optional(),
   "systemPrompt": zod.string().optional(),
   "topP": zod.number().min(updateModelBodyTopPMin).max(updateModelBodyTopPMax).optional(),
-  "enabled": zod.boolean().optional()
+  "enabled": zod.boolean().optional(),
+  "webSearchEnabled": zod.boolean().optional()
 })
 
 export const UpdateModelResponse = zod.object({
@@ -148,6 +153,7 @@ export const UpdateModelResponse = zod.object({
   "systemPrompt": zod.string().nullable(),
   "topP": zod.number(),
   "enabled": zod.boolean(),
+  "webSearchEnabled": zod.boolean(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })

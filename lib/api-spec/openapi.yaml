@@ -371,6 +371,8 @@ components:
           type: number
         enabled:
           type: boolean
+        webSearchEnabled:
+          type: boolean
         createdAt:
           type: string
           format: date-time
@@ -387,6 +389,7 @@ components:
         - systemPrompt
         - topP
         - enabled
+        - webSearchEnabled
         - createdAt
         - updatedAt
 
@@ -415,6 +418,8 @@ components:
           minimum: 0
           maximum: 1
         enabled:
+          type: boolean
+        webSearchEnabled:
           type: boolean
       required:
         - name
@@ -445,6 +450,8 @@ components:
           minimum: 0
           maximum: 1
         enabled:
+          type: boolean
+        webSearchEnabled:
           type: boolean
 
     Conversation:
