@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useParams, useLocation, Link } from 'wouter';
 import {
   useGetModel,
@@ -448,15 +450,23 @@ export default function ModelDetail() {
                                 : 'bg-muted text-foreground'
                             }`}
                           >
-                            {msg.content || (msg.streaming && (
+                            {msg.role === 'user' ? (
+                              <span className="whitespace-pre-wrap">{msg.content}</span>
+                            ) : msg.content ? (
+                              <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-2 prose-code:text-xs">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  {msg.content}
+                                </ReactMarkdown>
+                                {msg.streaming && (
+                                  <span className="inline-block w-0.5 h-3.5 bg-current animate-pulse ml-0.5 align-middle" />
+                                )}
+                              </div>
+                            ) : msg.streaming ? (
                               <span className="inline-flex items-center gap-1">
                                 <Loader2 className="h-3 w-3 animate-spin" />
                                 <span className="text-xs opacity-70">Thinking…</span>
                               </span>
-                            ))}
-                            {msg.streaming && msg.content && (
-                              <span className="inline-block w-0.5 h-3.5 bg-current animate-pulse ml-0.5 align-middle" />
-                            )}
+                            ) : null}
                           </div>
                         </div>
                       ))}
