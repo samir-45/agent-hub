@@ -180,98 +180,55 @@ router.post("/models/:modelId/conversations/:id/messages", async (req, res): Pro
     const openrouter = await getOpenRouterClient();
 
     if (model.webSearchEnabled) {
-      // ── Phase 1: non-streaming call with web_search tool ──────────────────
-      const webSearchTool = {
-        type: "function" as const,
-        function: {
-          name: "web_search",
-          description:
-            "Search the web for current information, recent events, news, prices, or any real-time data that may not be in your training data.",
-          parameters: {
-            type: "object",
-            properties: {
-              query: { type: "string", description: "The search query to look up" },
-            },
-            required: ["query"],
-          },
-        },
-      };
+      // ── Pre-search: fetch web results and inject as context ────────────────
+      // Search using the user's latest message as the query.
+      const userQuery = parsed.data.content;
+      res.write(`data: ${JSON.stringify({ searching: true, query: userQuery })}\n\n`);
 
-      const firstResponse = await openrouter.chat.completions.create({
+      let searchContext = "";
+      try {
+        searchContext = await tavilySearch(userQuery);
+        req.log.info({ query: userQuery }, "Tavily search succeeded");
+      } catch (searchErr) {
+        req.log.warn({ searchErr }, "Tavily search failed — continuing without web results");
+      }
+
+      // Inject search results as a system message right before the conversation
+      const messagesWithSearch: { role: "system" | "user" | "assistant"; content: string }[] = [];
+
+      // Preserve the model's original system prompt (if any)
+      if (model.systemPrompt) {
+        messagesWithSearch.push({ role: "system", content: model.systemPrompt });
+      }
+
+      // Inject web results as a system message
+      if (searchContext) {
+        messagesWithSearch.push({
+          role: "system",
+          content: `The following is current information retrieved from the web for the user's query. Use it to give an accurate, up-to-date answer:\n\n${searchContext}`,
+        });
+      }
+
+      // Add conversation history (excluding the initial system prompt we already added)
+      for (const m of history) {
+        messagesWithSearch.push({ role: m.role as "user" | "assistant", content: m.content });
+      }
+
+      // Stream the response with web context injected
+      const stream = await openrouter.chat.completions.create({
         model: model.modelId,
         max_tokens: model.maxTokens,
         temperature: model.temperature,
         top_p: model.topP,
-        messages: chatMessages,
-        tools: [webSearchTool],
-        tool_choice: "auto",
-        stream: false,
+        messages: messagesWithSearch,
+        stream: true,
       });
 
-      const firstChoice = firstResponse.choices[0];
-
-      if (
-        firstChoice.finish_reason === "tool_calls" &&
-        firstChoice.message.tool_calls?.length
-      ) {
-        // ── Phase 2: execute tool calls ──────────────────────────────────────
-        const toolResults: { role: "tool"; tool_call_id: string; content: string }[] = [];
-
-        for (const toolCall of firstChoice.message.tool_calls) {
-          if (toolCall.function.name === "web_search") {
-            let args: { query?: string };
-            try {
-              args = JSON.parse(toolCall.function.arguments) as { query?: string };
-            } catch {
-              args = {};
-            }
-            const query = args.query ?? parsed.data.content;
-            res.write(`data: ${JSON.stringify({ searching: true, query })}\n\n`);
-
-            let searchContent: string;
-            try {
-              searchContent = await tavilySearch(query);
-            } catch (searchErr) {
-              req.log.warn({ searchErr }, "Tavily search failed");
-              searchContent = `Search failed: ${searchErr instanceof Error ? searchErr.message : String(searchErr)}`;
-            }
-
-            toolResults.push({
-              role: "tool",
-              tool_call_id: toolCall.id,
-              content: searchContent,
-            });
-          }
-        }
-
-        // ── Phase 3: stream final response with search results ───────────────
-        const messagesWithTools = [
-          ...chatMessages,
-          firstChoice.message,
-          ...toolResults,
-        ];
-
-        const stream = await openrouter.chat.completions.create({
-          model: model.modelId,
-          max_tokens: model.maxTokens,
-          temperature: model.temperature,
-          top_p: model.topP,
-          messages: messagesWithTools,
-          stream: true,
-        });
-
-        for await (const chunk of stream) {
-          const content = chunk.choices[0]?.delta?.content;
-          if (content) {
-            fullResponse += content;
-            res.write(`data: ${JSON.stringify({ content })}\n\n`);
-          }
-        }
-      } else {
-        // Model chose not to search — use the response we already have
-        fullResponse = firstChoice.message.content ?? "";
-        if (fullResponse) {
-          res.write(`data: ${JSON.stringify({ content: fullResponse })}\n\n`);
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+          fullResponse += content;
+          res.write(`data: ${JSON.stringify({ content })}\n\n`);
         }
       }
     } else {

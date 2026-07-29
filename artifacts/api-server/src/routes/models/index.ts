@@ -65,6 +65,7 @@ router.post("/models", async (req, res): Promise<void> => {
     systemPrompt: parsed.data.systemPrompt ?? null,
     topP: parsed.data.topP ?? 1.0,
     enabled: parsed.data.enabled ?? true,
+    webSearchEnabled: parsed.data.webSearchEnabled ?? false,
   }).returning();
   res.status(201).json(CreateModelResponse.parse(model));
 });
@@ -106,6 +107,7 @@ router.patch("/models/:id", async (req, res): Promise<void> => {
   if (parsed.data.systemPrompt !== undefined) updateData.systemPrompt = parsed.data.systemPrompt;
   if (parsed.data.topP !== undefined) updateData.topP = parsed.data.topP;
   if (parsed.data.enabled !== undefined) updateData.enabled = parsed.data.enabled;
+  if (parsed.data.webSearchEnabled !== undefined) updateData.webSearchEnabled = parsed.data.webSearchEnabled;
 
   const [model] = await db
     .update(modelsTable)
