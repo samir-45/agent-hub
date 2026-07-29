@@ -201,11 +201,24 @@ router.post("/models/:modelId/conversations/:id/messages", async (req, res): Pro
         messagesWithSearch.push({ role: "system", content: model.systemPrompt });
       }
 
-      // Inject web results as a system message
+      // Inject web results with a strong directive the model cannot ignore
       if (searchContext) {
         messagesWithSearch.push({
           role: "system",
-          content: `The following is current information retrieved from the web for the user's query. Use it to give an accurate, up-to-date answer:\n\n${searchContext}`,
+          content: [
+            "## REAL-TIME WEB SEARCH RESULTS",
+            "",
+            "You have been connected to a live web search tool (Tavily). The search was executed RIGHT NOW for the user's latest message and returned the following real, current data:",
+            "",
+            searchContext,
+            "",
+            "## INSTRUCTIONS",
+            "- You MUST use the above search results to answer the user.",
+            "- Do NOT say you cannot browse the web or access the internet — you just did.",
+            "- Do NOT say you lack real-time data — the data above IS real-time.",
+            "- Cite sources (URLs) from the search results where relevant.",
+            "- If the search results are insufficient, say so and summarize what you found.",
+          ].join("\n"),
         });
       }
 
