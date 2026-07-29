@@ -1,0 +1,269 @@
+# Upgrade My AI Platform into a Multi-Agent AI Coding Workspace
+
+Transform my existing project into a complete AI coding platform similar to Replit AI, Bolt.new, Lovable, and Cursor.
+
+## Existing Features (Keep These)
+
+* User enters their own OpenRouter API key.
+* User selects any OpenRouter model.
+* AI chat is already working.
+* Tavily API is already integrated for web search.
+* Keep all current functionality intact.
+
+---
+
+# New Features to Build
+
+## 1. Project Workspace
+
+Users can create multiple projects.
+
+Each project stores:
+
+* Chat history
+* Files
+* Folder structure
+* Preview URL
+* Terminal logs
+* Project settings
+* AI memory
+
+---
+
+## 2. VS Code Style File Explorer
+
+Create a sidebar with:
+
+* New File
+* New Folder
+* Rename
+* Delete
+* Drag & Drop
+* Search Files
+
+Support common project structures like:
+
+* Next.js
+* React
+* Node.js
+* HTML/CSS/JS
+* Python
+
+---
+
+## 3. Monaco Editor
+
+Replace any simple editor with Monaco Editor.
+
+Features:
+
+* Syntax highlighting
+* Auto complete
+* Multiple tabs
+* Dark/Light theme
+* File tabs
+* Save indicator
+
+---
+
+## 4. AI File Editing
+
+The AI must be able to:
+
+* Read files
+* Create files
+* Edit files
+* Rename files
+* Delete files
+* Search across the project
+
+Changes should appear instantly in the editor.
+
+---
+
+## 5. Live Preview
+
+Create a Preview panel.
+
+The AI should:
+
+* Install dependencies if needed
+* Start the development server
+* Detect the preview URL
+* Automatically refresh after code changes
+* Display the application inside an iframe
+
+Support:
+
+* React
+* Next.js
+* Vite
+* HTML
+
+---
+
+## 6. Terminal
+
+Add an integrated terminal.
+
+The AI should be able to execute commands like:
+
+* npm install
+* npm run dev
+* pnpm install
+* yarn install
+* git commands
+
+Display real-time terminal output.
+
+---
+
+## 7. Tool Calling
+
+Create a secure tool execution system.
+
+Available AI tools:
+
+* readFile
+* writeFile
+* editFile
+* deleteFile
+* listFiles
+* searchFiles
+* createFolder
+* renameFile
+* runTerminal
+* webSearch (Tavily)
+* openPreview
+* installPackages
+
+The AI should automatically choose which tool to use.
+
+---
+
+## 8. Multi-Agent Architecture
+
+Implement specialized AI agents.
+
+Planner Agent
+
+* Breaks tasks into steps.
+
+Frontend Agent
+
+* Builds UI.
+
+Backend Agent
+
+* Builds APIs.
+
+Database Agent
+
+* Handles database schema and queries.
+
+Debug Agent
+
+* Detects and fixes build/runtime errors.
+
+Reviewer Agent
+
+* Reviews generated code and suggests improvements.
+
+The main orchestrator should assign work to the appropriate agent automatically.
+
+---
+
+## 9. Automatic Error Fixing
+
+When the development server reports an error:
+
+1. Read the error.
+2. Identify affected files.
+3. Fix the issue.
+4. Restart or reload if necessary.
+5. Continue until the project builds successfully.
+
+---
+
+## 10. Chat Context
+
+The AI should always understand:
+
+* Current project
+* Open file
+* Selected code
+* Installed packages
+* Folder structure
+* Previous conversation
+* Recent edits
+
+---
+
+## 11. Image Upload
+
+Users can upload:
+
+* Figma exports
+* Screenshots
+* UI mockups
+
+The AI should analyze the image and generate matching code.
+
+---
+
+## 12. Deployment
+
+Add one-click deployment support for:
+
+* Vercel
+* Netlify
+
+---
+
+## 13. UI Layout
+
+Create a modern IDE layout:
+
+Left:
+
+* File Explorer
+
+Center:
+
+* Monaco Editor
+
+Right:
+
+* AI Chat
+
+Bottom:
+
+* Terminal
+
+Preview:
+
+* Toggleable live preview panel
+
+Resizable panels similar to VS Code.
+
+---
+
+## 14. Performance
+
+* Stream AI responses.
+* Show tool execution progress.
+* Display which agent is currently working.
+* Support long-running tasks without freezing the UI.
+
+---
+
+## 15. Security
+
+* Never expose the user's OpenRouter API key.
+* Store API keys securely.
+* Require user confirmation before destructive file operations.
+* Sandbox terminal commands where possible.
+
+---
+
+Build this incrementally, keeping the application functional after each step. Create clean, modular, maintainable code with reusable components and clear folder organization.
