@@ -1,15 +1,16 @@
-# [Project name]
+# OpenRouter Model Manager
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A full-stack app for managing and chatting with AI models via OpenRouter, with a React frontend and Express API backed by PostgreSQL.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- Workflows: `artifacts/api-server: API Server` (port 8080) and `artifacts/model-manager: web` (port 19606)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required secrets: `OPENROUTER_API_KEY` — OpenRouter API key (https://openrouter.ai/keys)
+- Runtime-managed: `DATABASE_URL` — auto-provisioned PostgreSQL connection string
 
 ## Stack
 
