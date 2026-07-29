@@ -331,7 +331,7 @@ export default function ModelDetail() {
     <div className="min-h-[100dvh] bg-background flex flex-col">
       {/* Header */}
       <div className="border-b border-border bg-card shrink-0">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="w-full px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Link href="/">
@@ -378,7 +378,7 @@ export default function ModelDetail() {
       </div>
 
       {/* Body */}
-      <div className="flex-1 max-w-7xl w-full mx-auto px-6 py-6 flex gap-6 min-h-0">
+      <div className="flex-1 w-full px-6 py-6 flex gap-6 min-h-0">
         {/* Sidebar: conversations */}
         <aside className="w-64 shrink-0 flex flex-col gap-3">
           <div className="flex items-center justify-between">
