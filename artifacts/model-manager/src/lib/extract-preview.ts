@@ -1,4 +1,23 @@
 /**
+ * Script injected into every preview to prevent in-iframe navigation
+ * that would blank the srcdoc iframe.
+ */
+const NAVIGATION_GUARD = `<script>
+// Intercept link clicks — open in new tab instead of navigating iframe
+document.addEventListener('click', function(e) {
+  var a = e.target.closest ? e.target.closest('a') : null;
+  if (a && a.href && !a.href.startsWith('javascript:')) {
+    e.preventDefault();
+    window.open(a.href, '_blank', 'noopener');
+  }
+}, true);
+// Intercept form submissions
+document.addEventListener('submit', function(e) {
+  e.preventDefault();
+}, true);
+</script>`;
+
+/**
  * Extracts a self-contained, previewable HTML document from an AI message
  * that contains code blocks. Returns null if no previewable content is found.
  */
@@ -32,6 +51,12 @@ export function extractPreview(content: string): string | null {
       if (jsBlock && !html.includes('<script')) {
         html = html.replace('</body>', `<script>\n${jsBlock.code}\n</script>\n</body>`);
       }
+      // Inject navigation guard before </body>
+      if (html.includes('</body>')) {
+        html = html.replace('</body>', `${NAVIGATION_GUARD}\n</body>`);
+      } else {
+        html += NAVIGATION_GUARD;
+      }
       return html;
     }
     // Partial HTML snippet — wrap in a full document
@@ -64,6 +89,7 @@ function wrapHtml(body: string, css?: string, js?: string): string {
 <body>
 ${body}
 ${js ? `<script>\n${js}\n</script>` : ''}
+${NAVIGATION_GUARD}
 </body>
 </html>`;
 }
@@ -110,6 +136,7 @@ if (__Root) {
     '<p style="color:red;padding:1rem">Could not find a React component to render.</p>';
 }
 </script>
+${NAVIGATION_GUARD}
 </body>
 </html>`;
 }

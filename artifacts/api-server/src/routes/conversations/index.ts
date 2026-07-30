@@ -173,6 +173,7 @@ router.post("/models/:modelId/conversations/:id/messages", async (req, res): Pro
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
+  res.flushHeaders?.();
 
   // Signal: context loaded, about to call the model
   res.write(`data: ${JSON.stringify({ stage: "preparing" })}\n\n`);
@@ -207,7 +208,9 @@ router.post("/models/:modelId/conversations/:id/messages", async (req, res): Pro
   }
 
   try {
-    const openrouter = await getOpenRouterClient();
+    const userEmail = (req as any).auth?.claims?.email || (req as any).auth?.sessionClaims?.email;
+    const userHeaderKey = req.headers["x-openrouter-key"] as string | undefined;
+    const openrouter = await getOpenRouterClient(userEmail, userHeaderKey);
 
     if (model.webSearchEnabled) {
       // ── Pre-search: fetch web results and inject as context ────────────────
@@ -284,9 +287,47 @@ router.post("/models/:modelId/conversations/:id/messages", async (req, res): Pro
     });
 
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
-  } catch (err) {
-    req.log.error({ err }, "OpenRouter streaming error");
-    res.write(`data: ${JSON.stringify({ error: "Streaming failed", done: true })}\n\n`);
+  } catch (err: any) {
+    const errorMessage = err?.message || "Streaming failed";
+    req.log.error({ err, errorMessage }, "OpenRouter streaming error");
+
+    // Check if model is offline/unavailable or returning 404 on OpenRouter and attempt auto-fallback
+    if (
+      errorMessage.includes("404") ||
+      errorMessage.includes("No endpoints found") ||
+      errorMessage.includes("unavailable") ||
+      errorMessage.includes("paid version")
+    ) {
+      req.log.info("Model endpoint offline/unavailable on OpenRouter. Retrying with active fallback model (meta-llama/llama-3.3-70b-instruct:free)...");
+      try {
+        res.write(`data: ${JSON.stringify({ content: `> *Notice: ${model.name} is currently offline on OpenRouter. Auto-switching to active free model (Meta Llama 3.3 70B)*\n\n` })}\n\n`);
+        const openrouter = await getOpenRouterClient();
+        const fallbackStream = await openrouter.chat.completions.create({
+          model: "meta-llama/llama-3.3-70b-instruct:free",
+          max_tokens: model.maxTokens,
+          temperature: model.temperature,
+          top_p: model.topP,
+          messages: chatMessages,
+          stream: true,
+        });
+
+        await pipeStream(fallbackStream);
+
+        await db.insert(messages).values({
+          conversationId: conv.id,
+          role: "assistant",
+          content: fullResponse,
+        });
+
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        res.end();
+        return;
+      } catch (fallbackErr: any) {
+        req.log.error({ fallbackErr }, "Fallback streaming also failed");
+      }
+    }
+
+    res.write(`data: ${JSON.stringify({ error: errorMessage, done: true })}\n\n`);
   }
 
   res.end();

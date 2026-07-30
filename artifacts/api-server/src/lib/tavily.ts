@@ -22,11 +22,12 @@ export async function tavilySearch(query: string): Promise<string> {
   const response = await fetch("https://api.tavily.com/search", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    signal: AbortSignal.timeout(2500),
     body: JSON.stringify({
       api_key: apiKey,
       query,
       search_depth: "basic",
-      max_results: 5,
+      max_results: 3,
       include_answer: true,
     }),
   });

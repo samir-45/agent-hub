@@ -3,7 +3,6 @@ import { eq } from "drizzle-orm";
 import { db, settingsTable } from "@workspace/db";
 import { encrypt, decrypt, maskApiKey } from "../lib/encryption";
 import { invalidateApiKeyCache } from "../lib/openrouter-client";
-import { invalidateTavilyKeyCache } from "../lib/tavily";
 import { z } from "zod";
 
 const router: IRouter = Router();

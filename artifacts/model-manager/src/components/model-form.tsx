@@ -37,6 +37,19 @@ interface ModelFormProps {
   submitLabel?: string;
 }
 
+const FREE_PRESETS = [
+  { name: 'Llama 3.3 70B Instruct (Free)', modelId: 'meta-llama/llama-3.3-70b-instruct:free', description: "Meta's flagship 70B open weight model with 128k context window." },
+  { name: 'Gemini 2.0 Flash Exp (Free)', modelId: 'google/gemini-2.0-flash-exp:free', description: "Google's next-gen Gemini 2.0 Flash model. Ultra fast speed & multimodal." },
+  { name: 'DeepSeek R1 (Free)', modelId: 'deepseek/deepseek-r1:free', description: "DeepSeek's flagship open-weights reasoning model with chain-of-thought." },
+  { name: 'DeepSeek V3 (Free)', modelId: 'deepseek/deepseek-chat:free', description: "DeepSeek V3 671B mixture-of-experts model. Exceptional coding & math." },
+  { name: 'Qwen 2.5 Coder 32B (Free)', modelId: 'qwen/qwen-2.5-coder-32b-instruct:free', description: "Alibaba's elite 32B coding model optimized for code generation & debugging." },
+  { name: 'NVIDIA Nemotron 3 Ultra (Free)', modelId: 'nvidia/nemotron-3-ultra:free', description: "NVIDIA's high-throughput model tuned for instruction following & chat." },
+  { name: 'Mistral 7B Instruct (Free)', modelId: 'mistralai/mistral-7b-instruct:free', description: "Mistral's fast and efficient 7B instruct model." },
+  { name: 'Phi-3 Medium 128k (Free)', modelId: 'microsoft/phi-3-medium-128k-instruct:free', description: "Microsoft's 14B compact model with 128k context support." },
+  { name: 'Gemma 2 9B IT (Free)', modelId: 'google/gemma-2-9b-it:free', description: "Google's Gemma 2 9B instruction-tuned model." },
+  { name: 'OpenChat 7B (Free)', modelId: 'openchat/openchat-7b:free', description: "OpenChat 7B tuned with C-RLFT for ChatGPT-like conversational quality." },
+];
+
 export function ModelForm({
   defaultValues,
   onSubmit,
@@ -76,12 +89,40 @@ export function ModelForm({
   const topP = form.watch('topP');
   const maxTokens = form.watch('maxTokens');
 
+  const handleSelectPreset = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const preset = FREE_PRESETS.find((p) => p.modelId === e.target.value);
+    if (preset) {
+      form.setValue('name', preset.name);
+      form.setValue('modelId', preset.modelId);
+      form.setValue('description', preset.description);
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <Card>
+      <Card className="glass-card rounded-2xl">
         <CardHeader>
-          <CardTitle className="text-base">Identity</CardTitle>
-          <CardDescription>How this model configuration is identified</CardDescription>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-base">Identity</CardTitle>
+              <CardDescription>How this model configuration is identified</CardDescription>
+            </div>
+            {!defaultValues?.id && (
+              <div className="shrink-0">
+                <select
+                  onChange={handleSelectPreset}
+                  className="text-xs bg-muted/60 border border-emerald-500/30 text-emerald-400 font-medium rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 cursor-pointer"
+                >
+                  <option value="">✨ Quick Fill Free Model…</option>
+                  {FREE_PRESETS.map((p) => (
+                    <option key={p.modelId} value={p.modelId} className="bg-card text-foreground">
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

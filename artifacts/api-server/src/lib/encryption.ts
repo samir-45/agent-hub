@@ -1,9 +1,8 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
 
 function getKey(): Buffer {
-  const secret = process.env.SESSION_SECRET;
-  if (!secret) throw new Error("SESSION_SECRET is required for encryption");
-  // Derive a 32-byte key from the secret
+  const secret = process.env.SESSION_SECRET || process.env.CLERK_SECRET_KEY || "cockpit-agent-hub-secure-encryption-secret-2026";
+  // Derive a 32-byte key from the secret using SHA-256
   return createHash("sha256").update(secret).digest();
 }
 

@@ -1,6 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { MarkdownRenderer } from '@/components/markdown-renderer';
 import { useParams, useLocation, Link } from 'wouter';
 import {
   useGetModel,
@@ -34,6 +33,8 @@ import {
   RefreshCw,
   ExternalLink,
   Monitor,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -57,6 +58,8 @@ import { ModelForm } from '@/components/model-form';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { extractPreview } from '@/lib/extract-preview';
 import type { ModelInput } from '@workspace/api-client-react';
+
+const PREVIEWABLE_LANGS = new Set(['html', 'css', 'javascript', 'js', 'jsx', 'tsx']);
 
 type Message = {
   id?: number;
@@ -83,8 +86,10 @@ export default function ModelDetail() {
   const [reasoningText, setReasoningText] = useState('');
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const { data: model, isLoading: modelLoading } = useGetModel(modelId);
   const { data: conversations, isLoading: convsLoading } = useListModelConversations(modelId);
@@ -93,10 +98,15 @@ export default function ModelDetail() {
   const createConversation = useCreateModelConversation();
   const deleteConversation = useDeleteModelConversation();
 
-  // Auto-scroll to bottom
+  // Auto-scroll to bottom directly without window layout reflow
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    const viewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+    if (viewport) {
+      viewport.scrollTop = viewport.scrollHeight;
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'instant' as ScrollBehavior });
+    }
+  }, [messages, reasoningText]);
 
   const handleUpdate = async (data: ModelInput) => {
     updateModel.mutate(
@@ -170,14 +180,16 @@ export default function ModelDetail() {
     const url = `/api/models/${modelId}/conversations/${convId}/messages`;
     fetch(url)
       .then((r) => r.json())
-      .then((msgs: Array<{ id: number; role: string; content: string }>) => {
-        setMessages(
-          msgs.map((m) => ({
-            id: m.id,
-            role: m.role as 'user' | 'assistant',
-            content: m.content,
-          }))
-        );
+      .then((msgs) => {
+        if (Array.isArray(msgs)) {
+          setMessages(
+            msgs.map((m: any) => ({
+              id: m.id,
+              role: m.role as 'user' | 'assistant',
+              content: m.content,
+            }))
+          );
+        }
       })
       .catch(() => {});
   };
@@ -252,8 +264,16 @@ export default function ModelDetail() {
               setCurrentStage('searching');
               setSearchingQuery(json.query ?? '…');
             }
-            if (json.reasoning) {
-              setReasoningText((prev) => prev + json.reasoning);
+            if (json.error) {
+              fullContent = `Error: ${json.error}`;
+              setMessages((prev) => {
+                const next = [...prev];
+                const last = next[next.length - 1];
+                if (last?.streaming) {
+                  next[next.length - 1] = { ...last, content: fullContent, streaming: false };
+                }
+                return next;
+              });
             }
             if (json.content) {
               setCurrentStage('generating');
@@ -319,12 +339,12 @@ export default function ModelDetail() {
 
   if (modelLoading) {
     return (
-      <div className="min-h-[100dvh] bg-background p-6">
-        <Skeleton className="h-8 w-48 mb-4" />
-        <Skeleton className="h-4 w-72 mb-8" />
+      <div className="min-h-[100dvh] bg-background p-6 noise-bg">
+        <Skeleton className="h-8 w-48 mb-4 rounded-xl" />
+        <Skeleton className="h-4 w-72 mb-8 rounded-xl" />
         <div className="grid grid-cols-3 gap-6">
-          <Skeleton className="h-64 col-span-1" />
-          <Skeleton className="h-64 col-span-2" />
+          <Skeleton className="h-64 col-span-1 rounded-2xl" />
+          <Skeleton className="h-64 col-span-2 rounded-2xl" />
         </div>
       </div>
     );
@@ -344,77 +364,97 @@ export default function ModelDetail() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col">
-      {/* Header */}
-      <div className="border-b border-border bg-card shrink-0">
-        <div className="w-full px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Link href="/">
-                <Button variant="ghost" size="icon" className="h-8 w-8" data-testid="button-back">
-                  <ArrowLeft className="h-4 w-4" />
+    <div className="h-screen max-h-screen overflow-hidden bg-background flex flex-col noise-bg">
+      {/* Gradient accent strip */}
+      <div className="h-[2px] w-full gradient-primary shrink-0" />
+
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'chat' | 'config')} className="h-full flex-1 flex flex-col min-h-0 overflow-hidden">
+        {/* Header */}
+        <div className="border-b border-border/50 bg-card/50 backdrop-blur-xl shrink-0">
+          <div className="w-full px-6 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Link href="/">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl hover:bg-muted/50" data-testid="button-back">
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-xl hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                  onClick={() => setSidebarOpen((v) => !v)}
+                  title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+                >
+                  {sidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4 text-emerald-400" />}
                 </Button>
-              </Link>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold text-foreground">{model.name}</h1>
-                  <Badge variant={model.enabled ? 'default' : 'secondary'}>
-                    {model.enabled ? 'Active' : 'Disabled'}
-                  </Badge>
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <h1 className="text-base font-bold text-foreground tracking-tight">{model.name}</h1>
+                    <Badge
+                      variant={model.enabled ? 'default' : 'secondary'}
+                      className={model.enabled ? 'gradient-primary border-0 text-black font-semibold text-[10px]' : 'text-[10px]'}
+                    >
+                      {model.enabled ? 'Active' : 'Disabled'}
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] font-mono text-muted-foreground tracking-wide">{model.modelId}</p>
                 </div>
-                <p className="text-xs font-mono text-muted-foreground mt-0.5">{model.modelId}</p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* Tabs switcher in top header */}
+                <TabsList className="h-8 p-1 rounded-xl bg-muted/60 border border-border/40">
+                  <TabsTrigger value="chat" className="h-6 px-3 text-xs gap-1.5 rounded-lg data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400 font-medium transition-all">
+                    <MessageSquare className="h-3.5 w-3.5" /> Chat
+                  </TabsTrigger>
+                  <TabsTrigger value="config" className="h-6 px-3 text-xs gap-1.5 rounded-lg data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400 font-medium transition-all">
+                    <Settings className="h-3.5 w-3.5" /> Config
+                  </TabsTrigger>
+                </TabsList>
+
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="rounded-2xl">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete {model.name}?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete the model and all its conversations. This cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete {model.name}?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete the model and all its conversations. This cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleDelete}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
           </div>
         </div>
-      </div>
 
       {/* Body */}
-      <div className="flex-1 w-full px-6 py-6 flex gap-6 min-h-0">
+      <div className="flex-1 w-full px-5 py-4 flex gap-5 min-h-0 overflow-hidden">
         {/* Sidebar: conversations */}
-        <aside className="w-64 shrink-0 flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-foreground">Conversations</span>
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'chat' | 'config')}>
-              <TabsList className="h-7 p-0.5">
-                <TabsTrigger value="chat" className="h-6 px-2 text-xs gap-1">
-                  <MessageSquare className="h-3 w-3" /> Chat
-                </TabsTrigger>
-                <TabsTrigger value="config" className="h-6 px-2 text-xs gap-1">
-                  <Settings className="h-3 w-3" /> Config
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
+        {sidebarOpen && (
+          <aside className="w-64 shrink-0 flex flex-col gap-3 h-full overflow-hidden glass-card rounded-2xl p-3 animate-slide-up">
+            <div className="flex items-center justify-between px-1 pt-1">
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider font-mono">Conversations</span>
+            </div>
 
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 w-full"
+            className="gap-2 w-full shrink-0 rounded-xl border-dashed border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300"
             onClick={handleNewConversation}
             disabled={createConversation.isPending || activeTab === 'config'}
           >
@@ -422,27 +462,27 @@ export default function ModelDetail() {
             New Chat
           </Button>
 
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 min-h-0">
             {convsLoading ? (
               <div className="space-y-2">
-                {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+                {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-9 w-full rounded-lg" />)}
               </div>
             ) : conversations && conversations.length > 0 ? (
               <div className="space-y-1">
                 {[...conversations].reverse().map((conv) => (
                   <div
                     key={conv.id}
-                    className={`group flex items-center gap-1 rounded-md px-2 py-1.5 cursor-pointer transition-colors ${
+                    className={`group flex items-center gap-2 rounded-xl px-3 py-2 cursor-pointer transition-all duration-200 ${
                       activeConvId === conv.id
-                        ? 'bg-primary/10 text-primary'
-                        : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                        : 'hover:bg-muted/50 text-muted-foreground hover:text-foreground border border-transparent'
                     }`}
                     onClick={() => { handleSelectConversation(conv.id); setActiveTab('chat'); }}
                   >
                     <MessageSquare className="h-3.5 w-3.5 shrink-0" />
-                    <span className="flex-1 text-xs truncate">{conv.title}</span>
+                    <span className="flex-1 text-xs truncate font-medium">{conv.title}</span>
                     <button
-                      className="opacity-0 group-hover:opacity-100 hover:text-destructive"
+                      className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity duration-200"
                       onClick={(e) => { e.stopPropagation(); handleDeleteConversation(conv.id); }}
                     >
                       <Trash2 className="h-3 w-3" />
@@ -455,55 +495,63 @@ export default function ModelDetail() {
             )}
           </ScrollArea>
         </aside>
+        )}
 
         {/* Main content */}
-        <div className="flex-1 min-w-0">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'chat' | 'config')}>
-            <TabsContent value="chat" className="mt-0 h-full">
+        <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden">
+          <TabsContent value="chat" className="mt-0 h-full flex-1 flex flex-col min-h-0 overflow-hidden data-[state=inactive]:hidden">
               {activeConvId ? (
-                <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-200px)]">
-                  <ResizablePanel id="chat" order={1} defaultSize={showPreview ? 50 : 100} minSize={30}>
-                    <div className="flex flex-col h-full">
-                  <ScrollArea className="flex-1 pr-4">
-                    <div className="space-y-4 pb-4">
-                      {messages.length === 0 && (
-                        <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
-                          <Bot className="h-8 w-8 mb-2" />
-                          <p className="text-sm">Send a message to get started</p>
+                <ResizablePanelGroup direction="horizontal" className="h-full w-full flex-1 min-h-0 min-w-0">
+                  <ResizablePanel id="chat" order={1} defaultSize={showPreview ? 45 : 100} minSize={25} className="min-w-0">
+                    <div className="flex flex-col h-full justify-between min-h-0 min-w-0 overflow-hidden">
+                  <ScrollArea ref={scrollAreaRef} className="flex-1 min-h-0 pr-4">
+                    {messages.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-full min-h-[250px] w-full text-muted-foreground my-auto animate-fade-in">
+                        <div className="h-14 w-14 rounded-2xl gradient-primary flex items-center justify-center mb-4 shadow-lg glow-primary">
+                          <Bot className="h-7 w-7 text-black stroke-[2.2]" />
                         </div>
-                      )}
+                        <p className="text-sm font-medium text-foreground mb-1">Start a conversation</p>
+                        <p className="text-xs text-muted-foreground">Send a message to begin chatting</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-5 pb-4">
                       {messages.map((msg, i) => (
                         <div
                           key={i}
-                          className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                          className={`flex gap-3 animate-slide-up ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                         >
                           <div
-                            className={`shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-xs ${
+                            className={`shrink-0 h-7 w-7 rounded-xl flex items-center justify-center text-xs shadow-sm ${
                               msg.role === 'user'
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted text-muted-foreground'
+                                ? 'gradient-primary text-black font-bold'
+                                : 'bg-muted/80 text-muted-foreground border border-border/50'
                             }`}
                           >
                             {msg.role === 'user' ? <User className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5" />}
                           </div>
                           <div
-                            className={`max-w-[80%] rounded-lg px-4 py-2.5 text-sm ${
+                            className={`rounded-2xl px-4 py-3 text-sm ${
                               msg.role === 'user'
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted text-foreground'
+                                ? 'max-w-[80%] gradient-primary text-black font-medium shadow-lg shadow-emerald-500/10'
+                                : 'max-w-full bg-card/60 text-foreground border border-border/40'
                             }`}
                           >
                             {msg.role === 'user' ? (
                               <span className="whitespace-pre-wrap">{msg.content}</span>
                             ) : msg.content ? (
-                              <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-2 prose-code:text-xs">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                  {msg.content}
-                                </ReactMarkdown>
-                                {msg.streaming && (
-                                  <span className="inline-block w-0.5 h-3.5 bg-current animate-pulse ml-0.5 align-middle" />
-                                )}
-                              </div>
+                              <MarkdownRenderer
+                                content={msg.content}
+                                streaming={msg.streaming}
+                                onOpenPreview={(code, lang) => {
+                                  if (PREVIEWABLE_LANGS.has(lang)) {
+                                    const preview = extractPreview(msg.content);
+                                    if (preview) {
+                                      setPreviewHtml(preview);
+                                      setShowPreview(true);
+                                    }
+                                  }
+                                }}
+                              />
                             ) : msg.streaming ? (
                               <div className="space-y-2 min-w-[180px]">
                                 {/* Stage progress indicator */}
@@ -547,26 +595,27 @@ export default function ModelDetail() {
                       ))}
                       <div ref={messagesEndRef} />
                     </div>
+                    )}
                   </ScrollArea>
 
-                  <div className="shrink-0 pt-4 border-t border-border mt-4">
-                    <div className="flex gap-2 items-end">
+                  <div className="shrink-0 pt-3 border-t border-border/30 mt-3">
+                    <div className="flex gap-2 items-end glass-card rounded-2xl p-2">
                       <Textarea
                         placeholder="Type a message… (Enter to send, Shift+Enter for newline)"
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
                         onKeyDown={handleKeyDown}
                         disabled={isSending}
-                        className="resize-none min-h-[44px] max-h-[120px]"
+                        className="resize-none min-h-[44px] max-h-[120px] border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
                         rows={1}
                         data-testid="input-message"
                       />
                       <Button
                         onClick={() => setShowPreview((p) => !p)}
                         size="icon"
-                        variant={showPreview ? 'default' : 'outline'}
+                        variant={showPreview ? 'default' : 'ghost'}
                         title={showPreview ? 'Hide preview' : 'Show preview'}
-                        className="shrink-0"
+                        className={`shrink-0 rounded-xl transition-all duration-200 ${showPreview ? 'gradient-primary text-black font-bold border-0' : 'hover:bg-muted/50'}`}
                       >
                         {showPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
@@ -575,7 +624,7 @@ export default function ModelDetail() {
                         disabled={!inputText.trim() || isSending}
                         size="icon"
                         data-testid="button-send"
-                        className="shrink-0"
+                        className="shrink-0 rounded-xl gradient-primary text-black font-bold border-0 shadow-lg glow-primary-hover transition-all duration-300 hover:scale-105 disabled:opacity-30 disabled:shadow-none"
                       >
                         {isSending ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -592,14 +641,14 @@ export default function ModelDetail() {
                     <>
                       <ResizableHandle withHandle />
                       <ResizablePanel id="preview" order={2} defaultSize={50} minSize={20}>
-                        <div className="flex flex-col h-full border-l border-border">
+                        <div className="flex flex-col h-full border-l border-border/30">
                           {/* Preview header */}
-                          <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0 bg-muted/30">
+                          <div className="flex items-center justify-between px-3 py-2 border-b border-border/30 shrink-0 bg-card/50 backdrop-blur-sm">
                             <div className="flex items-center gap-2">
-                              <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
+                              <Monitor className="h-3.5 w-3.5 text-emerald-400" />
                               <span className="text-xs font-medium text-foreground">Preview</span>
                               {previewHtml && (
-                                <span className="text-xs text-muted-foreground">· live</span>
+                                <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-mono"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> live</span>
                               )}
                             </div>
                             <div className="flex gap-1">
@@ -641,7 +690,7 @@ export default function ModelDetail() {
                               ref={previewIframeRef}
                               srcDoc={previewHtml}
                               className="flex-1 w-full"
-                              sandbox="allow-scripts"
+                              sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
                               title="Live Preview"
                             />
                           ) : (
@@ -661,15 +710,17 @@ export default function ModelDetail() {
                   )}
                 </ResizablePanelGroup>
               ) : (
-                <Card className="border-dashed border-2 h-[calc(100vh-200px)] flex items-center justify-center">
+                <Card className="border-dashed border-2 border-border/40 h-[calc(100vh-200px)] flex items-center justify-center rounded-2xl animate-fade-in bg-card/40">
                   <CardContent className="flex flex-col items-center text-center p-8">
-                    <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
+                    <div className="h-16 w-16 rounded-2xl gradient-primary flex items-center justify-center mb-5 shadow-lg glow-primary">
+                      <MessageSquare className="h-8 w-8 text-black" />
+                    </div>
                     <h3 className="text-lg font-semibold mb-2">No conversation selected</h3>
-                    <p className="text-sm text-muted-foreground mb-6">
-                      Start a new conversation to test <span className="font-medium">{model.name}</span>
+                    <p className="text-sm text-muted-foreground mb-8">
+                      Start a new conversation to test <span className="font-medium text-foreground">{model.name}</span>
                     </p>
-                    <Button onClick={handleNewConversation} disabled={createConversation.isPending}>
-                      <Plus className="h-4 w-4 mr-2" />
+                    <Button onClick={handleNewConversation} disabled={createConversation.isPending} className="rounded-xl gradient-primary text-black font-semibold border-0 shadow-lg glow-primary-hover transition-all duration-300 hover:scale-[1.02]">
+                      <Plus className="h-4 w-4 mr-2 stroke-[2.5]" />
                       New Chat
                     </Button>
                   </CardContent>
@@ -678,7 +729,7 @@ export default function ModelDetail() {
             </TabsContent>
 
             <TabsContent value="config" className="mt-0">
-              <ScrollArea className="h-[calc(100vh-200px)] pr-4">
+              <ScrollArea className="h-[calc(100vh-140px)] pr-4">
                 <ModelForm
                   defaultValues={model}
                   onSubmit={handleUpdate}
@@ -687,9 +738,9 @@ export default function ModelDetail() {
                 />
               </ScrollArea>
             </TabsContent>
-          </Tabs>
         </div>
       </div>
+      </Tabs>
     </div>
   );
 }

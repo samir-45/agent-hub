@@ -125,51 +125,58 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-background">
-      <div className="border-b border-border bg-card">
-        <div className="max-w-2xl mx-auto px-6 py-6">
+    <div className="min-h-[100dvh] bg-background noise-bg">
+      {/* Gradient accent strip */}
+      <div className="h-[2px] w-full gradient-primary" />
+
+      <div className="border-b border-border/50 bg-card/50 backdrop-blur-xl sticky top-0 z-50">
+        <div className="max-w-2xl mx-auto px-6 py-5">
           <div className="flex items-center gap-4">
             <Link href="/">
-              <Button variant="ghost" size="icon" className="h-8 w-8" data-testid="button-back">
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl hover:bg-muted/50" data-testid="button-back">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">Settings</h1>
-              <p className="text-sm text-muted-foreground mt-1">Manage API keys and configuration</p>
+              <h1 className="text-xl font-bold tracking-tight text-foreground">Settings</h1>
+              <p className="text-xs text-muted-foreground mt-0.5">Manage API keys and configuration</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-6 py-8 space-y-6">
+      <div className="max-w-2xl mx-auto px-6 py-8 space-y-6 animate-slide-up">
         {/* OpenRouter API Key Card */}
-        <Card>
+        <Card className="glass-card rounded-2xl">
           <CardHeader>
-            <div className="flex items-center gap-2">
-              <Key className="h-5 w-5 text-muted-foreground" />
-              <CardTitle className="text-base">OpenRouter API Key</CardTitle>
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-primary/10">
+                <Key className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-base">OpenRouter API Key</CardTitle>
+                <CardDescription className="mt-0.5">
+                  Used to send requests to OpenRouter models. Stored encrypted with AES-256-GCM.
+                </CardDescription>
+              </div>
             </div>
-            <CardDescription>
-              Used to send requests to OpenRouter models. Stored encrypted in the database using AES-256-GCM.
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {isLoading ? (
-              <div className="h-16 rounded-lg bg-muted animate-pulse" />
+              <div className="h-16 rounded-xl bg-muted/30 animate-pulse" />
             ) : (
               <>
-                <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                <div className="flex items-center justify-between rounded-xl border border-border/50 p-4 glass-card">
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-full ${status?.exists ? 'bg-primary/10' : 'bg-muted'}`}>
-                      <ShieldCheck className={`h-4 w-4 ${status?.exists ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <div className={`p-2 rounded-xl ${status?.exists ? 'bg-emerald-500/10' : 'bg-muted/50'}`}>
+                      <ShieldCheck className={`h-4 w-4 ${status?.exists ? 'text-emerald-400' : 'text-muted-foreground'}`} />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">
+                        <span className="text-sm font-medium font-mono">
                           {status?.maskedKey ?? 'No key configured'}
                         </span>
-                        <Badge variant={sourceVariant[status?.source ?? 'none']} className="text-xs">
+                        <Badge variant={sourceVariant[status?.source ?? 'none']} className={`text-xs ${status?.source === 'database' ? 'gradient-primary border-0 text-black font-semibold' : ''}`}>
                           {sourceLabel[status?.source ?? 'none']}
                         </Badge>
                       </div>
@@ -190,7 +197,7 @@ export default function Settings() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="gap-2"
+                      className="gap-2 rounded-xl hover:border-primary/40 hover:bg-primary/5 transition-all duration-300"
                       onClick={handleOpenDialog}
                       data-testid="button-edit-key"
                     >
@@ -207,13 +214,13 @@ export default function Settings() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-muted-foreground hover:text-destructive"
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl"
                             data-testid="button-delete-key"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent>
+                        <AlertDialogContent className="rounded-2xl">
                           <AlertDialogHeader>
                             <AlertDialogTitle>Remove API key?</AlertDialogTitle>
                             <AlertDialogDescription>
@@ -222,10 +229,10 @@ export default function Settings() {
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() => deleteMutation.mutate()}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
                             >
                               Remove
                             </AlertDialogAction>
@@ -236,7 +243,7 @@ export default function Settings() {
                   </div>
                 </div>
 
-                <div className="rounded-lg bg-muted/50 border border-border p-3 flex gap-2 text-xs text-muted-foreground">
+                <div className="rounded-xl bg-primary/5 border border-primary/10 p-3 flex gap-2.5 text-xs text-muted-foreground">
                   <ShieldCheck className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" />
                   <span>
                     Keys are encrypted with AES-256-GCM before being stored. The raw value is never
@@ -251,7 +258,7 @@ export default function Settings() {
 
       {/* Add / Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle>{status?.exists && status.source === 'database' ? 'Edit API Key' : 'Add API Key'}</DialogTitle>
             <DialogDescription>
@@ -260,7 +267,7 @@ export default function Settings() {
                 href="https://openrouter.ai/keys"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="underline text-primary"
+                className="underline text-primary hover:text-primary/80 transition-colors"
               >
                 openrouter.ai/keys
               </a>.
@@ -277,12 +284,12 @@ export default function Settings() {
                 value={inputKey}
                 onChange={(e) => setInputKey(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-                className="pr-10 font-mono text-sm"
+                className="pr-10 font-mono text-sm rounded-xl"
                 autoComplete="off"
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 onClick={() => setShowKey((v) => !v)}
                 tabIndex={-1}
               >
@@ -291,13 +298,14 @@ export default function Settings() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="rounded-xl">
               Cancel
             </Button>
             <Button
               onClick={handleSave}
               disabled={!inputKey.trim() || saveMutation.isPending}
               data-testid="button-save-key"
+              className="rounded-xl gradient-primary text-black font-semibold border-0 shadow-lg"
             >
               {saveMutation.isPending ? 'Saving…' : 'Save Key'}
             </Button>

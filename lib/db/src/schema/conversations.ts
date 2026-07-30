@@ -6,6 +6,7 @@ import { modelsTable } from "./models";
 
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
+  userId: text("user_id"),
   modelId: integer("model_id")
     .notNull()
     .references(() => modelsTable.id, { onDelete: "cascade" }),

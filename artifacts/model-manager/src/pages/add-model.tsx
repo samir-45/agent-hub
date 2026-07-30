@@ -39,25 +39,28 @@ export default function AddModel() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-background">
-      <div className="border-b border-border bg-card">
-        <div className="max-w-4xl mx-auto px-6 py-6">
-          <div className="flex items-center gap-4 mb-2">
+    <div className="min-h-[100dvh] bg-background noise-bg">
+      {/* Gradient accent strip */}
+      <div className="h-[2px] w-full gradient-primary" />
+
+      <div className="border-b border-border/50 bg-card/50 backdrop-blur-xl sticky top-0 z-50">
+        <div className="max-w-4xl mx-auto px-6 py-5">
+          <div className="flex items-center gap-4">
             <Link href="/">
               <Button
                 variant="ghost"
                 size="icon"
                 data-testid="button-back"
-                className="h-8 w-8"
+                className="h-8 w-8 rounded-xl hover:bg-muted/50"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              <h1 className="text-xl font-bold tracking-tight text-foreground">
                 Add Model
               </h1>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Configure a new OpenRouter model
               </p>
             </div>
@@ -65,7 +68,7 @@ export default function AddModel() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-4xl mx-auto px-6 py-8 animate-slide-up">
         <ModelForm onSubmit={handleSubmit} isSubmitting={createModel.isPending} />
       </div>
     </div>

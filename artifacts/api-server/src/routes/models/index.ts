@@ -70,6 +70,176 @@ router.post("/models", async (req, res): Promise<void> => {
   res.status(201).json(CreateModelResponse.parse(model));
 });
 
+const BEST_FREE_MODELS = [
+  {
+    name: "Llama 3.3 70B Instruct (Free)",
+    modelId: "meta-llama/llama-3.3-70b-instruct:free",
+    description: "Meta's flagship 70B open weight model with 128k context window. 100% free on OpenRouter.",
+    maxTokens: 8192,
+    temperature: 0.7,
+  },
+  {
+    name: "Gemini 2.0 Flash Exp (Free)",
+    modelId: "google/gemini-2.0-flash-exp:free",
+    description: "Google's next-gen Gemini 2.0 Flash model. Ultra fast speed, high intelligence & multimodal.",
+    maxTokens: 8192,
+    temperature: 0.7,
+  },
+  {
+    name: "DeepSeek R1 (Free)",
+    modelId: "deepseek/deepseek-r1:free",
+    description: "DeepSeek's flagship open-weights reasoning model with chain-of-thought capabilities.",
+    maxTokens: 8192,
+    temperature: 0.6,
+  },
+  {
+    name: "DeepSeek V3 (Free)",
+    modelId: "deepseek/deepseek-chat:free",
+    description: "DeepSeek V3 671B mixture-of-experts model. Exceptional coding, reasoning, and math performance.",
+    maxTokens: 8192,
+    temperature: 0.7,
+  },
+  {
+    name: "Qwen 2.5 Coder 32B (Free)",
+    modelId: "qwen/qwen-2.5-coder-32b-instruct:free",
+    description: "Alibaba's elite 32B coding model optimized for code generation, bug fixing, and refactoring.",
+    maxTokens: 8192,
+    temperature: 0.5,
+  },
+  {
+    name: "NVIDIA Nemotron 3 Ultra (Free)",
+    modelId: "nvidia/nemotron-3-ultra:free",
+    description: "NVIDIA's customized high-throughput model tuned for high quality, instruction following, and chat.",
+    maxTokens: 8192,
+    temperature: 0.7,
+  },
+  {
+    name: "Mistral 7B Instruct (Free)",
+    modelId: "mistralai/mistral-7b-instruct:free",
+    description: "Mistral's fast and efficient 7B instruct model. Great for general tasks and rapid responses.",
+    maxTokens: 8192,
+    temperature: 0.7,
+  },
+  {
+    name: "Phi-3 Medium 128k (Free)",
+    modelId: "microsoft/phi-3-medium-128k-instruct:free",
+    description: "Microsoft's 14B parameter state-of-the-art small language model with 128k context support.",
+    maxTokens: 8192,
+    temperature: 0.7,
+  },
+  {
+    name: "Gemma 2 9B IT (Free)",
+    modelId: "google/gemma-2-9b-it:free",
+    description: "Google's Gemma 2 9B instruction-tuned model with high performance across benchmarks.",
+    maxTokens: 8192,
+    temperature: 0.7,
+  },
+  {
+    name: "OpenChat 7B (Free)",
+    modelId: "openchat/openchat-7b:free",
+    description: "OpenChat 7B tuned with C-RLFT for ChatGPT-like conversational quality.",
+    maxTokens: 8192,
+    temperature: 0.7,
+  },
+];
+
+// POST /models/seed-free-models
+router.post("/models/seed-free-models", async (_req, res): Promise<void> => {
+  try {
+    // 1. Query OpenRouter's live public catalog API for 100% 0-cost free models
+    let liveFreeModels: Array<{ name: string; modelId: string; description: string; maxTokens: number; temperature: number }> = [];
+    try {
+      const liveRes = await fetch("https://openrouter.ai/api/v1/models");
+      if (liveRes.ok) {
+        const body: any = await liveRes.json();
+        const catalog = body.data || [];
+        liveFreeModels = catalog
+          .filter((m: any) => {
+            const promptCost = parseFloat(m.pricing?.prompt ?? "1");
+            const completionCost = parseFloat(m.pricing?.completion ?? "1");
+            return promptCost === 0 && completionCost === 0;
+          })
+          .map((m: any) => ({
+            name: `${m.name || m.id} (Free)`,
+            modelId: m.id,
+            description: m.description ? m.description.slice(0, 150) : "OpenRouter 100% active free model",
+            maxTokens: m.top_provider?.max_completion_tokens || 8192,
+            temperature: 0.7,
+          }));
+      }
+    } catch (apiErr) {
+      console.warn("Could not query OpenRouter live API, falling back to verified preset list:", apiErr);
+    }
+
+    // Combine live models or fallback to static list if live models empty
+    const pool = liveFreeModels.length > 0 ? liveFreeModels : BEST_FREE_MODELS;
+
+    const existing = await db.select().from(modelsTable);
+    const existingIds = new Set(existing.map((m) => m.modelId));
+
+    const inserted = [];
+    for (const item of pool) {
+      if (!existingIds.has(item.modelId)) {
+        const [newRow] = await db
+          .insert(modelsTable)
+          .values({
+            name: item.name,
+            modelId: item.modelId,
+            description: item.description,
+            temperature: item.temperature,
+            maxTokens: item.maxTokens,
+            topP: 1.0,
+            enabled: true,
+            webSearchEnabled: false,
+          })
+          .returning();
+        inserted.push(newRow);
+      }
+    }
+
+    res.json({ message: `Seeded ${inserted.length} verified free models`, seeded: inserted });
+  } catch (error: any) {
+    console.error("Error seeding free models:", error);
+    res.status(500).json({ error: error.message || "Failed to seed free models" });
+  }
+});
+
+// POST /models/purge-non-free
+router.post("/models/purge-non-free", async (_req, res): Promise<void> => {
+  try {
+    const liveRes = await fetch("https://openrouter.ai/api/v1/models");
+    const activeFreeIds = new Set<string>();
+
+    if (liveRes.ok) {
+      const body: any = await liveRes.json();
+      const catalog = body.data || [];
+      catalog.forEach((m: any) => {
+        const promptCost = parseFloat(m.pricing?.prompt ?? "1");
+        const completionCost = parseFloat(m.pricing?.completion ?? "1");
+        if (promptCost === 0 && completionCost === 0) {
+          activeFreeIds.add(m.id);
+        }
+      });
+    }
+
+    const existing = await db.select().from(modelsTable);
+    const removedNames: string[] = [];
+
+    for (const m of existing) {
+      const isFree = m.modelId.endsWith(":free") && (activeFreeIds.size === 0 || activeFreeIds.has(m.modelId));
+      if (!isFree) {
+        await db.delete(modelsTable).where(eq(modelsTable.id, m.id));
+        removedNames.push(m.name);
+      }
+    }
+
+    res.json({ message: `Removed ${removedNames.length} non-free or offline model(s)`, removed: removedNames });
+  } catch (error: any) {
+    console.error("Error purging non-free models:", error);
+    res.status(500).json({ error: error.message || "Failed to purge non-free models" });
+  }
+});
+
 // GET /models/:id
 router.get("/models/:id", async (req, res): Promise<void> => {
   const params = GetModelParams.safeParse(req.params);
