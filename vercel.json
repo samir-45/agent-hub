@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "vite",
+  "framework": null,
   "buildCommand": "pnpm --filter @workspace/model-manager build",
   "outputDirectory": "artifacts/model-manager/dist/public",
   "rewrites": [
