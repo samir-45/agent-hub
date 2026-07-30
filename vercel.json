@@ -1,7 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm --filter @workspace/model-manager build",
-  "outputDirectory": "artifacts/model-manager/dist/public",
   "rewrites": [
     {
       "source": "/api/(.*)",
