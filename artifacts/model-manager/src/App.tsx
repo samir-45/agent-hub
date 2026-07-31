@@ -48,13 +48,13 @@ import AdminPage from '@/pages/admin';
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/models/new" component={AddModel} />
-      <Route path="/models/:id" component={ModelDetail} />
-      <Route path="/settings" component={Settings} />
-      <Route path="/generate" component={ImageStudio} />
-      <Route path="/admin" component={AdminPage} />
-      <Route component={NotFound} />
+      <Route path="/">{() => <Dashboard />}</Route>
+      <Route path="/models/new">{() => <AddModel />}</Route>
+      <Route path="/models/:id">{(params) => <ModelDetail />}</Route>
+      <Route path="/settings">{() => <Settings />}</Route>
+      <Route path="/generate">{() => <ImageStudio />}</Route>
+      <Route path="/admin">{() => <AdminPage />}</Route>
+      <Route>{() => <NotFound />}</Route>
     </Switch>
   );
 }

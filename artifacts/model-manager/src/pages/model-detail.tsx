@@ -339,6 +339,16 @@ export default function ModelDetail() {
     }
   };
 
+  const handleOpenPreview = useCallback((code: string, lang: string) => {
+    if (PREVIEWABLE_LANGS.has(lang)) {
+      const preview = extractPreview(code);
+      if (preview) {
+        setPreviewHtml(preview);
+        setShowPreview(true);
+      }
+    }
+  }, []);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -551,15 +561,7 @@ export default function ModelDetail() {
                               <MarkdownRenderer
                                 content={msg.content}
                                 streaming={msg.streaming}
-                                onOpenPreview={(code, lang) => {
-                                  if (PREVIEWABLE_LANGS.has(lang)) {
-                                    const preview = extractPreview(msg.content);
-                                    if (preview) {
-                                      setPreviewHtml(preview);
-                                      setShowPreview(true);
-                                    }
-                                  }
-                                }}
+                                onOpenPreview={handleOpenPreview}
                               />
                             ) : msg.streaming ? (
                               <div className="space-y-2 min-w-[180px]">

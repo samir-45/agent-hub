@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Check, Copy, Play, ChevronDown, ChevronUp, FileCode2, Download, WrapText } from 'lucide-react';
@@ -99,7 +99,7 @@ const customTheme = {
   },
 };
 
-export function CodeBlock({ language, code, fullMessageContent, isPrimaryEntry, onOpenPreview }: CodeBlockProps) {
+export const CodeBlock = memo(function CodeBlock({ language, code, fullMessageContent, isPrimaryEntry, onOpenPreview }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
   const [wrapLines, setWrapLines] = useState(true);
@@ -253,4 +253,4 @@ export function CodeBlock({ language, code, fullMessageContent, isPrimaryEntry, 
       </div>
     </div>
   );
-}
+});

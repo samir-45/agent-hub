@@ -1,4 +1,4 @@
-import { type ComponentPropsWithoutRef } from 'react';
+import { type ComponentPropsWithoutRef, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CodeBlock } from '@/components/code-block';
@@ -10,7 +10,7 @@ interface MarkdownRendererProps {
   onOpenPreview?: (code: string, lang: string) => void;
 }
 
-export function MarkdownRenderer({ content, streaming, onOpenPreview }: MarkdownRendererProps) {
+export const MarkdownRenderer = memo(function MarkdownRenderer({ content, streaming, onOpenPreview }: MarkdownRendererProps) {
   // Parse code blocks in content to determine the primary entry point block
   const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
   const blocks: { index: number; lang: string; code: string }[] = [];
@@ -150,4 +150,4 @@ export function MarkdownRenderer({ content, streaming, onOpenPreview }: Markdown
       )}
     </div>
   );
-}
+});
