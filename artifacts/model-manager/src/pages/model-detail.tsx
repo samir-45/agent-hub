@@ -90,6 +90,7 @@ export default function ModelDetail() {
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { data: model, isLoading: modelLoading } = useGetModel(modelId);
   const { data: conversations, isLoading: convsLoading } = useListModelConversations(modelId);
@@ -97,6 +98,19 @@ export default function ModelDetail() {
   const deleteModel = useDeleteModel();
   const createConversation = useCreateModelConversation();
   const deleteConversation = useDeleteModelConversation();
+
+  // Auto-focus prompt text area whenever sending completes or active conversation changes
+  useEffect(() => {
+    if (!isSending) {
+      const timer = setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 50);
+      return () => {
+        clearTimeout(timer);
+      };
+    }
+    return undefined;
+  }, [isSending, activeConvId]);
 
   // Auto-scroll to bottom directly without window layout reflow
   useEffect(() => {
@@ -695,6 +709,7 @@ export default function ModelDetail() {
                   <div className="shrink-0 pt-3 border-t border-border/30 mt-3">
                     <div className="flex gap-2 items-end glass-card rounded-2xl p-2">
                       <Textarea
+                        ref={textareaRef}
                         placeholder="Type a message… (Enter to send, Shift+Enter for newline)"
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
