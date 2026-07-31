@@ -815,36 +815,71 @@ export default function ImageStudio() {
         {/* Prompt Input & Output Gallery (Right 8 cols) */}
         <div className="lg:col-span-8 space-y-6 flex flex-col min-h-0">
           {/* Prompt Area */}
-          <Card className="glass-card rounded-2xl p-4 space-y-3 shrink-0 shadow-lg">
+          <Card className="glass-card rounded-2xl p-4 space-y-3 shrink-0 shadow-lg border border-border/60 focus-within:border-emerald-500/50 focus-within:shadow-[0_0_20px_rgba(16,185,129,0.15)] transition-all duration-300">
             <div className="flex items-center justify-between">
-              <Label className="text-xs font-semibold text-foreground uppercase tracking-wider font-mono">
-                Image Prompt
-              </Label>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleEnhancePrompt}
-                disabled={!prompt.trim() || isGenerating}
-                className="h-7 text-xs gap-1.5 text-emerald-400 hover:bg-emerald-500/10 rounded-lg"
-              >
-                <Wand2 className="h-3.5 w-3.5" />
-                Enhance Prompt
-              </Button>
+              <div className="flex items-center gap-2">
+                <Label className="text-xs font-semibold text-foreground uppercase tracking-wider font-mono">
+                  Image Prompt
+                </Label>
+                {prompt.length > 0 && (
+                  <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md border border-border/40">
+                    {prompt.length} chars
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5">
+                {prompt.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setPrompt('')}
+                    disabled={isGenerating}
+                    className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                    title="Clear prompt"
+                  >
+                    Clear
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleEnhancePrompt}
+                  disabled={!prompt.trim() || isGenerating}
+                  className="h-7 text-xs gap-1.5 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                >
+                  <Wand2 className="h-3.5 w-3.5" />
+                  Enhance Prompt
+                </Button>
+              </div>
             </div>
 
-            <Textarea
-              placeholder="Describe the image you want to generate in detail… (e.g., A futuristic cyberpunk city at night with green neon reflections)"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              disabled={isGenerating}
-              className="resize-none min-h-[90px] border-border/60 bg-muted/20 rounded-xl text-sm focus-visible:ring-emerald-500/50"
-              rows={3}
-            />
+            <div className="relative">
+              <Textarea
+                placeholder="Describe the image you want to generate in detail… (e.g., A futuristic cyberpunk city at night with green neon reflections)"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    handleGenerate();
+                  }
+                }}
+                disabled={isGenerating}
+                className="w-full min-h-[110px] max-h-[240px] resize-y border-border/60 bg-muted/20 rounded-xl text-sm leading-relaxed focus-visible:ring-emerald-500/50 p-3 font-sans"
+                rows={4}
+              />
+            </div>
 
-            <div className="flex items-center justify-between pt-1">
-              <span className="text-[11px] text-muted-foreground font-mono">
-                Model: <span className="text-foreground font-medium">{selectedModel.split('/')[1]}</span>
-              </span>
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-mono">
+                <span>
+                  Engine: <span className="text-emerald-400 font-semibold">{selectedModel.split('/')[1] || selectedModel}</span>
+                </span>
+                <span className="text-border">•</span>
+                <span className="hidden sm:inline text-[10px] text-muted-foreground/70">
+                  Press <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border/50 text-[9px] font-sans text-foreground">Ctrl + Enter</kbd> to generate
+                </span>
+              </div>
               <Button
                 onClick={handleGenerate}
                 disabled={!prompt.trim() || isGenerating}
