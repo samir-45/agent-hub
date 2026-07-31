@@ -1,6 +1,6 @@
 {
   "framework": null,
-  "buildCommand": "echo '=== BUILD START ===' && echo 'CWD:' && pwd && pnpm run build 2>&1 && echo '=== CHECKING OUTPUT ===' && ls -la api/ && ls -la public/ 2>/dev/null || echo 'no public dir' && echo '=== BUILD DONE ==='",
+  "buildCommand": "pnpm run build",
   "outputDirectory": "public",
   "rewrites": [
     {
