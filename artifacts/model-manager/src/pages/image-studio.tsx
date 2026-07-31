@@ -96,7 +96,7 @@ const STORAGE_KEY = 'agent_hub_generated_images';
 function buildRefParam(url?: string): string {
   if (!url || typeof url !== 'string') return '';
   const trimmed = url.trim();
-  if (!trimmed || trimmed.startsWith('data:') || trimmed.includes('pollinations.ai')) return '';
+  if (!trimmed || trimmed.startsWith('data:') || trimmed.startsWith('blob:') || trimmed.includes('pollinations.ai')) return '';
   return `&image=${encodeURIComponent(trimmed)}`;
 }
 
@@ -274,8 +274,8 @@ export default function ImageStudio() {
     if (isGenerating) return;
     setIsGenerating(true);
     toast({
-      title: '✨ Generating Variations…',
-      description: `Synthesizing 4 iterations for "${targetImg.prompt.slice(0, 30)}..."`,
+      title: '✨ Generating 4 Intelligent Variations…',
+      description: `Synthesizing creative iterations for "${targetImg.prompt.slice(0, 30)}..."`,
     });
 
     const DIMENSIONS: Record<string, { width: number; height: number }> = {
@@ -287,27 +287,30 @@ export default function ImageStudio() {
     };
 
     const { width, height } = DIMENSIONS[targetImg.aspectRatio] || { width: 1024, height: 1024 };
-    const newVariations: GeneratedImage[] = [];
+    const cleanBasePrompt = (targetImg.prompt || '').replace(/\(Variation #\d+\)/g, '').trim();
 
     const variationModifiers = [
-      'subtle color variation, detailed lighting',
-      'alternative camera perspective, rich texture',
-      'dramatic lighting emphasis, vivid depth',
-      'high contrast, artistic refinement',
+      'cinematic dramatic lighting, 8k resolution, masterpiece, vivid depth',
+      'wide angle perspective, atmospheric lighting, studio quality, sharp focus',
+      'octane render, artstation trending, vibrant color palette, intricate detail',
+      'photorealistic, 85mm portrait lens, ultra high resolution, natural light',
     ];
 
+    const baseSeed = Math.floor(Math.random() * 800000) + 100000;
+    const cleanModel = targetImg.model.includes('anime') ? 'flux-anime' : 'flux';
+    const newVariations: GeneratedImage[] = [];
+
     for (let i = 0; i < 4; i++) {
-      const seed = Math.floor(Math.random() * 1000000);
-      const polModel = targetImg.model.includes('/') ? 'flux' : targetImg.model;
-      const basePrompt = targetImg.enhancedPrompt || targetImg.prompt;
-      const variationPrompt = `${basePrompt}, ${variationModifiers[i]}`;
+      const seed = baseSeed + (i + 1) * 314159;
+      const variationPrompt = `${cleanBasePrompt}, ${variationModifiers[i]}`;
       const encoded = encodeURIComponent(variationPrompt);
-      const url = `https://image.pollinations.ai/prompt/${encoded}?width=${width}&height=${height}&seed=${seed}&model=${encodeURIComponent(polModel)}${buildRefParam(targetImg.url)}&nologo=true`;
+      // Construct clean URL without recursive image= parameters
+      const url = `https://image.pollinations.ai/prompt/${encoded}?width=${width}&height=${height}&seed=${seed}&model=${encodeURIComponent(cleanModel)}&nologo=true`;
 
       newVariations.push({
         id: Date.now() + i,
         url,
-        prompt: `${targetImg.prompt} (Variation #${i + 1})`,
+        prompt: `${cleanBasePrompt} (Variation #${i + 1})`,
         enhancedPrompt: variationPrompt,
         model: targetImg.model,
         aspectRatio: targetImg.aspectRatio,
@@ -321,8 +324,8 @@ export default function ImageStudio() {
     setHistory((prev) => [...newVariations, ...prev]);
     setIsGenerating(false);
     toast({
-      title: '🎉 4 Variations Created!',
-      description: 'Added new iterations to your gallery.',
+      title: '🎉 4 Intelligent Variations Created!',
+      description: 'Added 4 distinct artistic variations to your gallery.',
     });
   };
 
@@ -724,8 +727,15 @@ export default function ImageStudio() {
                         loading="lazy"
                         onError={(e) => {
                           const target = e.currentTarget;
-                          if (target.src.includes('&image=')) {
-                            target.src = target.src.replace(/&image=[^&]*/, '');
+                          if (!target.dataset.retried) {
+                            target.dataset.retried = 'true';
+                            if (target.src.includes('&image=')) {
+                              target.src = target.src.replace(/&image=[^&]*/, '');
+                            } else {
+                              const cleanPrompt = encodeURIComponent((img.prompt || 'artistic scene').replace(/\(Variation #\d+\)/g, '').trim());
+                              const freshSeed = Math.floor(Math.random() * 900000) + 100000;
+                              target.src = `https://image.pollinations.ai/prompt/${cleanPrompt}?width=${img.width || 1024}&height=${img.height || 1024}&seed=${freshSeed}&model=flux&nologo=true`;
+                            }
                           }
                         }}
                       />
