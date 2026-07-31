@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Check, Copy, Play, ChevronDown, ChevronUp, FileCode2 } from 'lucide-react';
+import { Check, Copy, Play, ChevronDown, ChevronUp, FileCode2, Download, WrapText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface CodeBlockProps {
@@ -10,15 +10,47 @@ interface CodeBlockProps {
   onOpenPreview?: (code: string, lang: string) => void;
 }
 
+const LANG_EXTENSIONS: Record<string, string> = {
+  js: 'js',
+  javascript: 'js',
+  ts: 'ts',
+  typescript: 'ts',
+  jsx: 'jsx',
+  tsx: 'tsx',
+  html: 'html',
+  css: 'css',
+  python: 'py',
+  py: 'py',
+  json: 'json',
+  bash: 'sh',
+  sh: 'sh',
+  sql: 'sql',
+  go: 'go',
+  rust: 'rs',
+  java: 'java',
+  cpp: 'cpp',
+  c: 'c',
+  ruby: 'rb',
+  php: 'php',
+  yaml: 'yaml',
+  yml: 'yaml',
+  markdown: 'md',
+  md: 'md',
+  xml: 'xml',
+  swift: 'swift',
+  kotlin: 'kt',
+  dart: 'dart',
+};
+
 const LANG_LABELS: Record<string, string> = {
   js: 'JavaScript',
   javascript: 'JavaScript',
   ts: 'TypeScript',
   typescript: 'TypeScript',
-  jsx: 'JSX',
-  tsx: 'TSX',
-  html: 'HTML',
-  css: 'CSS',
+  jsx: 'React JSX',
+  tsx: 'React TSX',
+  html: 'HTML5',
+  css: 'CSS3',
   python: 'Python',
   py: 'Python',
   json: 'JSON',
@@ -40,21 +72,17 @@ const LANG_LABELS: Record<string, string> = {
   swift: 'Swift',
   kotlin: 'Kotlin',
   dart: 'Dart',
-  scss: 'SCSS',
-  sass: 'SASS',
-  less: 'LESS',
 };
 
 const PREVIEWABLE = new Set(['html', 'css', 'javascript', 'js', 'jsx', 'tsx']);
 
-const COLLAPSE_THRESHOLD = 25;
+const COLLAPSE_THRESHOLD = 30;
 
-// Custom theme based on oneDark but with tweaks for our UI
 const customTheme = {
   ...oneDark,
   'pre[class*="language-"]': {
     ...oneDark['pre[class*="language-"]'],
-    background: '#090c0a',
+    background: '#070908',
     margin: 0,
     padding: '1rem',
     fontSize: '13px',
@@ -72,6 +100,8 @@ const customTheme = {
 export function CodeBlock({ language, code, onOpenPreview }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
+  const [wrapLines, setWrapLines] = useState(true);
+
   const lang = language.toLowerCase().trim();
   const lineCount = code.split('\n').length;
   const isLong = lineCount > COLLAPSE_THRESHOLD;
@@ -85,35 +115,75 @@ export function CodeBlock({ language, code, onOpenPreview }: CodeBlockProps) {
     } catch {}
   }, [code]);
 
+  const handleDownload = useCallback(() => {
+    const ext = LANG_EXTENSIONS[lang] || 'txt';
+    const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `code_snippet.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [code, lang]);
+
   const displayCode = isLong && collapsed
     ? code.split('\n').slice(0, COLLAPSE_THRESHOLD).join('\n')
     : code;
 
   return (
-    <div className="group relative rounded-xl border border-emerald-950/60 overflow-hidden my-3 shadow-md bg-[#090c0a]">
+    <div className="group relative rounded-xl border border-emerald-950/60 overflow-hidden my-3 shadow-md bg-[#070908] transition-all hover:border-emerald-800/40">
       {/* Header bar */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#050706] border-b border-emerald-950/60">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-[#050706] border-b border-emerald-950/60 select-none">
         <div className="flex items-center gap-2">
-          <FileCode2 className="h-3.5 w-3.5 text-emerald-400/80" />
-          <span className="text-[11px] font-mono font-medium text-emerald-400/90 uppercase tracking-wider">
+          <FileCode2 className="h-3.5 w-3.5 text-emerald-400" />
+          <span className="text-[11px] font-mono font-semibold text-emerald-400/90 uppercase tracking-wider">
             {LANG_LABELS[lang] || lang || 'Code'}
           </span>
-          <span className="text-[10px] text-muted-foreground/50">
+          <span className="text-[10px] text-muted-foreground/60 font-mono">
             {lineCount} line{lineCount !== 1 ? 's' : ''}
           </span>
         </div>
+
         <div className="flex items-center gap-1">
+          {/* Line Wrap Toggle */}
+          <Button
+            size="icon"
+            variant="ghost"
+            className={`h-6 w-6 transition-colors ${wrapLines ? 'text-emerald-400 bg-emerald-950/30' : 'text-muted-foreground/70 hover:text-foreground'}`}
+            onClick={() => setWrapLines(w => !w)}
+            title={wrapLines ? 'Disable line wrap' : 'Enable line wrap'}
+          >
+            <WrapText className="h-3 w-3" />
+          </Button>
+
+          {/* Download snippet */}
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-6 w-6 text-muted-foreground/70 hover:text-emerald-400 transition-colors"
+            onClick={handleDownload}
+            title="Download code file"
+          >
+            <Download className="h-3 w-3" />
+          </Button>
+
+          {/* Live Preview Button */}
           {isPreviewable && onOpenPreview && (
             <Button
-              size="icon"
-              variant="ghost"
-              className="h-6 w-6 text-muted-foreground/70 hover:text-emerald-400 transition-colors"
+              size="sm"
+              variant="outline"
+              className="h-6 px-2 text-[11px] font-medium border-emerald-800/60 text-emerald-400 bg-emerald-950/40 hover:bg-emerald-900/60 transition-colors gap-1"
               onClick={() => onOpenPreview(code, lang)}
-              title="Open in Preview"
+              title="Open Live Preview Sandbox"
             >
-              <Play className="h-3 w-3" />
+              <Play className="h-3 w-3 fill-emerald-400" />
+              Live Preview
             </Button>
           )}
+
+          {/* Copy Button */}
           <Button
             size="icon"
             variant="ghost"
@@ -122,7 +192,7 @@ export function CodeBlock({ language, code, onOpenPreview }: CodeBlockProps) {
             title={copied ? 'Copied!' : 'Copy code'}
           >
             {copied ? (
-              <Check className="h-3 w-3 text-emerald-400" />
+              <Check className="h-3.5 w-3.5 text-emerald-400 animate-in zoom-in-50 duration-200" />
             ) : (
               <Copy className="h-3 w-3" />
             )}
@@ -143,12 +213,12 @@ export function CodeBlock({ language, code, onOpenPreview }: CodeBlockProps) {
             fontSize: '11px',
             userSelect: 'none',
           }}
-          wrapLongLines={true}
+          wrapLongLines={wrapLines}
           customStyle={{
             margin: 0,
-            background: '#090c0a',
-            wordBreak: 'break-word',
-            whiteSpace: 'pre-wrap',
+            background: '#070908',
+            wordBreak: wrapLines ? 'break-word' : 'normal',
+            whiteSpace: wrapLines ? 'pre-wrap' : 'pre',
           }}
         >
           {displayCode}
@@ -158,7 +228,7 @@ export function CodeBlock({ language, code, onOpenPreview }: CodeBlockProps) {
         {isLong && (
           <>
             {collapsed && (
-              <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#090c0a] to-transparent pointer-events-none" />
+              <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#070908] to-transparent pointer-events-none" />
             )}
             <button
               onClick={() => setCollapsed(c => !c)}
@@ -166,13 +236,13 @@ export function CodeBlock({ language, code, onOpenPreview }: CodeBlockProps) {
             >
               {collapsed ? (
                 <>
-                  <ChevronDown className="h-3 w-3" />
+                  <ChevronDown className="h-3 w-3 text-emerald-400" />
                   Show all {lineCount} lines
                 </>
               ) : (
                 <>
-                  <ChevronUp className="h-3 w-3" />
-                  Collapse
+                  <ChevronUp className="h-3 w-3 text-emerald-400" />
+                  Collapse code
                 </>
               )}
             </button>
