@@ -231,6 +231,10 @@ export default function ModelDetail() {
       if (localKey) {
         headers['x-openrouter-key'] = localKey;
       }
+      const clerkEmail = (window as any).Clerk?.user?.primaryEmailAddress?.emailAddress;
+      if (clerkEmail) {
+        headers['x-user-email'] = clerkEmail;
+      }
       const response = await fetch(url, {
         method: 'POST',
         headers,

@@ -366,6 +366,14 @@ export async function customFetch<T = unknown>(
     }
   }
 
+  // Attach x-user-email header from Clerk user session if available in browser
+  if (typeof window !== "undefined" && !headers.has("x-user-email")) {
+    const clerkUserEmail = (window as any).Clerk?.user?.primaryEmailAddress?.emailAddress;
+    if (clerkUserEmail) {
+      headers.set("x-user-email", clerkUserEmail);
+    }
+  }
+
   const requestInfo = { method, url: resolveUrl(input) };
 
   const response = await fetch(input, { ...init, method, headers });

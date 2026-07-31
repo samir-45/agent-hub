@@ -77289,13 +77289,26 @@ async function tavilySearch(query) {
 
 // src/routes/conversations/index.ts
 var router3 = (0, import_express3.Router)();
+function getUserIdentity(req) {
+  const email3 = req.headers["x-user-email"] || req.auth?.claims?.email || req.auth?.sessionClaims?.email || req.auth?.email;
+  const role = req.headers["x-user-role"] || req.auth?.claims?.publicMetadata?.role || req.auth?.sessionClaims?.publicMetadata?.role;
+  const userId = req.auth?.userId || (email3 ? email3.toLowerCase().trim() : "anonymous");
+  return { email: email3?.toLowerCase().trim(), role, userId };
+}
 router3.get("/models/:modelId/conversations", async (req, res) => {
   const params = ListModelConversationsParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const convs = await db.select().from(conversations).where(eq(conversations.modelId, params.data.modelId)).orderBy(conversations.createdAt);
+  const { userId, email: email3 } = getUserIdentity(req);
+  const userIdentifier = email3 || userId;
+  const convs = await db.select().from(conversations).where(
+    and(
+      eq(conversations.modelId, params.data.modelId),
+      eq(conversations.userId, userIdentifier)
+    )
+  ).orderBy(conversations.createdAt);
   res.json(ListModelConversationsResponse.parse(convs));
 });
 router3.post("/models/:modelId/conversations", async (req, res) => {
@@ -77314,7 +77327,13 @@ router3.post("/models/:modelId/conversations", async (req, res) => {
     res.status(404).json({ error: "Model not found" });
     return;
   }
-  const [conv] = await db.insert(conversations).values({ modelId: params.data.modelId, title: parsed.data.title }).returning();
+  const { userId, email: email3 } = getUserIdentity(req);
+  const userIdentifier = email3 || userId;
+  const [conv] = await db.insert(conversations).values({
+    modelId: params.data.modelId,
+    title: parsed.data.title,
+    userId: userIdentifier
+  }).returning();
   res.status(201).json(CreateModelConversationResponse.parse(conv));
 });
 router3.get("/models/:modelId/conversations/:id", async (req, res) => {
@@ -77323,7 +77342,15 @@ router3.get("/models/:modelId/conversations/:id", async (req, res) => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const [conv] = await db.select().from(conversations).where(and(eq(conversations.id, params.data.id), eq(conversations.modelId, params.data.modelId)));
+  const { userId, email: email3 } = getUserIdentity(req);
+  const userIdentifier = email3 || userId;
+  const [conv] = await db.select().from(conversations).where(
+    and(
+      eq(conversations.id, params.data.id),
+      eq(conversations.modelId, params.data.modelId),
+      eq(conversations.userId, userIdentifier)
+    )
+  );
   if (!conv) {
     res.status(404).json({ error: "Conversation not found" });
     return;
@@ -77337,7 +77364,15 @@ router3.delete("/models/:modelId/conversations/:id", async (req, res) => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const [conv] = await db.delete(conversations).where(and(eq(conversations.id, params.data.id), eq(conversations.modelId, params.data.modelId))).returning();
+  const { userId, email: email3 } = getUserIdentity(req);
+  const userIdentifier = email3 || userId;
+  const [conv] = await db.delete(conversations).where(
+    and(
+      eq(conversations.id, params.data.id),
+      eq(conversations.modelId, params.data.modelId),
+      eq(conversations.userId, userIdentifier)
+    )
+  ).returning();
   if (!conv) {
     res.status(404).json({ error: "Conversation not found" });
     return;
