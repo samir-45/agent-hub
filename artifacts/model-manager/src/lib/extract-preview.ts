@@ -112,8 +112,16 @@ function buildReactPreview(code: string, cssCode?: string): string {
     .replace(/^export\s+\{[^}]*\}\s*;?\s*$/gm, '')
     .replace(/^export\s+/gm, '');
 
-  const iconDeclarations = Array.from(new Set([...iconImports, 'ChevronLeft', 'ChevronRight', 'ChevronUp', 'ChevronDown', 'Calendar', 'Clock', 'Check', 'X', 'Plus', 'Minus', 'Trash', 'Trash2', 'Search', 'RefreshCw', 'Eye', 'EyeOff', 'User', 'Settings', 'ArrowLeft', 'ExternalLink', 'Copy', 'Play', 'Loader2', 'Globe', 'Lock', 'Unlock', 'Star', 'Heart', 'Share', 'Download', 'Upload', 'Edit', 'Filter', 'Sun', 'Moon', 'Calculator']))
-    .map(name => `const ${name} = typeof window.${name} !== 'undefined' ? window.${name} : createIcon('${name}');`)
+  // Detect function/class/const names in user code so icon stubs don't clash with user components
+  const declaredIdentifiers = new Set<string>();
+  const funcMatches = Array.from(cleaned.matchAll(/(?:function|class|const|let|var)\s+([A-Za-z0-9_]+)/g));
+  for (const m of funcMatches) {
+    if (m[1]) declaredIdentifiers.add(m[1]);
+  }
+
+  const iconDeclarations = Array.from(new Set([...iconImports, 'ChevronLeft', 'ChevronRight', 'ChevronUp', 'ChevronDown', 'Clock', 'Check', 'X', 'Plus', 'Minus', 'Trash', 'Trash2', 'Search', 'RefreshCw', 'Eye', 'EyeOff', 'User', 'Settings', 'ArrowLeft', 'ExternalLink', 'Copy', 'Play', 'Loader2', 'Globe', 'Lock', 'Unlock', 'Star', 'Heart', 'Share', 'Download', 'Upload', 'Edit', 'Filter', 'Sun', 'Moon']))
+    .filter(name => !declaredIdentifiers.has(name))
+    .map(name => `var ${name} = typeof window.${name} !== 'undefined' ? window.${name} : createIcon('${name}');`)
     .join('\n');
 
   return `<!DOCTYPE html>
