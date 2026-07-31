@@ -205,18 +205,18 @@ var require_common = __commonJS({
           if (typeof args[0] !== "string") {
             args.unshift("%O");
           }
-          let index = 0;
+          let index2 = 0;
           args[0] = args[0].replace(/%([a-zA-Z%])/g, (match2, format) => {
             if (match2 === "%%") {
               return "%";
             }
-            index++;
+            index2++;
             const formatter = createDebug2.formatters[format];
             if (typeof formatter === "function") {
-              const val = args[index];
+              const val = args[index2];
               match2 = formatter.call(self, val);
-              args.splice(index, 1);
-              index--;
+              args.splice(index2, 1);
+              index2--;
             }
             return match2;
           });
@@ -451,15 +451,15 @@ var require_browser = __commonJS({
       }
       const c = "color: " + this.color;
       args.splice(1, 0, c, "color: inherit");
-      let index = 0;
+      let index2 = 0;
       let lastC = 0;
       args[0].replace(/%[a-zA-Z%]/g, (match2) => {
         if (match2 === "%%") {
           return;
         }
-        index++;
+        index2++;
         if (match2 === "%c") {
-          lastC = index;
+          lastC = index2;
         }
       });
       args.splice(lastC, 0, c);
@@ -5680,12 +5680,12 @@ var require_dist = __commonJS({
     }
     function parse4(header, options) {
       const len = header.length;
-      let index = skipOWS(header, 0, len);
-      const valueStart = index;
-      index = skipValue(header, index, len);
-      const valueEnd = trailingOWS(header, valueStart, index);
+      let index2 = skipOWS(header, 0, len);
+      const valueStart = index2;
+      index2 = skipValue(header, index2, len);
+      const valueEnd = trailingOWS(header, valueStart, index2);
       const type = header.slice(valueStart, valueEnd).toLowerCase();
-      const parameters = options?.parameters === false ? new NullObject() : parseParameters(header, index, len);
+      const parameters = options?.parameters === false ? new NullObject() : parseParameters(header, index2, len);
       return { type, parameters };
     }
     var SP = 32;
@@ -5694,68 +5694,68 @@ var require_dist = __commonJS({
     var EQ = 61;
     var DQUOTE = 34;
     var BSLASH = 92;
-    function parseParameters(header, index, len) {
+    function parseParameters(header, index2, len) {
       const parameters = new NullObject();
-      parameter: while (index < len) {
-        index = skipOWS(header, index + 1, len);
-        const keyStart = index;
-        while (index < len) {
-          const code = header.charCodeAt(index);
+      parameter: while (index2 < len) {
+        index2 = skipOWS(header, index2 + 1, len);
+        const keyStart = index2;
+        while (index2 < len) {
+          const code = header.charCodeAt(index2);
           if (code === SEMI)
             continue parameter;
           if (code === EQ) {
-            const keyEnd = trailingOWS(header, keyStart, index);
+            const keyEnd = trailingOWS(header, keyStart, index2);
             const key = header.slice(keyStart, keyEnd).toLowerCase();
-            index = skipOWS(header, index + 1, len);
-            if (index < len && header.charCodeAt(index) === DQUOTE) {
-              index++;
+            index2 = skipOWS(header, index2 + 1, len);
+            if (index2 < len && header.charCodeAt(index2) === DQUOTE) {
+              index2++;
               let value = "";
-              while (index < len) {
-                const code2 = header.charCodeAt(index++);
+              while (index2 < len) {
+                const code2 = header.charCodeAt(index2++);
                 if (code2 === DQUOTE) {
-                  index = skipValue(header, index, len);
+                  index2 = skipValue(header, index2, len);
                   if (parameters[key] === void 0)
                     parameters[key] = value;
                   break;
                 }
-                if (code2 === BSLASH && index < len) {
-                  value += header[index++];
+                if (code2 === BSLASH && index2 < len) {
+                  value += header[index2++];
                   continue;
                 }
                 value += String.fromCharCode(code2);
               }
               continue parameter;
             }
-            const valueStart = index;
-            index = skipValue(header, index, len);
+            const valueStart = index2;
+            index2 = skipValue(header, index2, len);
             if (parameters[key] === void 0) {
-              const valueEnd = trailingOWS(header, valueStart, index);
+              const valueEnd = trailingOWS(header, valueStart, index2);
               parameters[key] = header.slice(valueStart, valueEnd);
             }
             continue parameter;
           }
-          index++;
+          index2++;
         }
       }
       return parameters;
     }
-    function skipValue(str2, index, len) {
-      while (index < len) {
-        const char2 = str2.charCodeAt(index);
+    function skipValue(str2, index2, len) {
+      while (index2 < len) {
+        const char2 = str2.charCodeAt(index2);
         if (char2 === SEMI)
           break;
-        index++;
+        index2++;
       }
-      return index;
+      return index2;
     }
-    function skipOWS(header, index, len) {
-      while (index < len) {
-        const char2 = header.charCodeAt(index);
+    function skipOWS(header, index2, len) {
+      while (index2 < len) {
+        const char2 = header.charCodeAt(index2);
         if (char2 !== SP && char2 !== HTAB)
           break;
-        index++;
+        index2++;
       }
-      return index;
+      return index2;
     }
     function trailingOWS(header, start, end) {
       while (end > start) {
@@ -15330,10 +15330,10 @@ var require_media_typer = __commonJS({
       var type = match2[1];
       var subtype = match2[2];
       var suffix;
-      var index = subtype.lastIndexOf("+");
-      if (index !== -1) {
-        suffix = subtype.substr(index + 1);
-        subtype = subtype.substr(0, index);
+      var index2 = subtype.lastIndexOf("+");
+      if (index2 !== -1) {
+        suffix = subtype.substr(index2 + 1);
+        subtype = subtype.substr(0, index2);
       }
       return new MediaType(type, subtype, suffix);
     }
@@ -15709,10 +15709,10 @@ var require_json = __commonJS({
       };
     }
     function createStrictSyntaxError(str2, char2) {
-      const index = str2.indexOf(char2);
+      const index2 = str2.indexOf(char2);
       let partial2 = "";
-      if (index !== -1) {
-        partial2 = str2.substring(0, index) + JSON_SYNTAX_CHAR.repeat(str2.length - index);
+      if (index2 !== -1) {
+        partial2 = str2.substring(0, index2) + JSON_SYNTAX_CHAR.repeat(str2.length - index2);
       }
       try {
         JSON.parse(partial2);
@@ -15720,7 +15720,7 @@ var require_json = __commonJS({
       } catch (e) {
         return normalizeJsonSyntaxError(e, {
           message: e.message.replace(JSON_SYNTAX_REGEXP, function(placeholder) {
-            return str2.substring(index, index + placeholder.length);
+            return str2.substring(index2, index2 + placeholder.length);
           }),
           stack: e.stack
         });
@@ -18192,18 +18192,18 @@ var require_parse = __commonJS({
           obj = options.plainObjects ? { __proto__: null } : {};
           var cleanRoot = root.charAt(0) === "[" && root.charAt(root.length - 1) === "]" ? root.slice(1, -1) : root;
           var decodedRoot = options.decodeDotInKeys ? cleanRoot.replace(/%2E/g, ".") : cleanRoot;
-          var index = parseInt(decodedRoot, 10);
-          var isValidArrayIndex = !isNaN(index) && root !== decodedRoot && String(index) === decodedRoot && index >= 0 && options.parseArrays;
+          var index2 = parseInt(decodedRoot, 10);
+          var isValidArrayIndex = !isNaN(index2) && root !== decodedRoot && String(index2) === decodedRoot && index2 >= 0 && options.parseArrays;
           if (!options.parseArrays && decodedRoot === "") {
             obj = { 0: leaf };
-          } else if (isValidArrayIndex && index < options.arrayLimit) {
+          } else if (isValidArrayIndex && index2 < options.arrayLimit) {
             obj = [];
-            obj[index] = leaf;
+            obj[index2] = leaf;
           } else if (isValidArrayIndex && options.throwOnLimitExceeded) {
             throw new RangeError("Array limit exceeded. Only " + options.arrayLimit + " element" + (options.arrayLimit === 1 ? "" : "s") + " allowed in an array.");
           } else if (isValidArrayIndex) {
-            obj[index] = leaf;
-            utils.markOverflow(obj, index);
+            obj[index2] = leaf;
+            utils.markOverflow(obj, index2);
           } else if (decodedRoot !== "__proto__") {
             obj[decodedRoot] = leaf;
           }
@@ -18445,12 +18445,12 @@ var require_urlencoded = __commonJS({
     }
     function parameterCount(body, limit2) {
       let count2 = 0;
-      let index = -1;
+      let index2 = -1;
       do {
         count2++;
         if (count2 > limit2) return void 0;
-        index = body.indexOf("&", index + 1);
-      } while (index !== -1);
+        index2 = body.indexOf("&", index2 + 1);
+      } while (index2 !== -1);
       return count2;
     }
   }
@@ -18523,10 +18523,10 @@ var require_escape_html = __commonJS({
       }
       var escape2;
       var html = "";
-      var index = 0;
+      var index2 = 0;
       var lastIndex = 0;
-      for (index = match2.index; index < str2.length; index++) {
-        switch (str2.charCodeAt(index)) {
+      for (index2 = match2.index; index2 < str2.length; index2++) {
+        switch (str2.charCodeAt(index2)) {
           case 34:
             escape2 = "&quot;";
             break;
@@ -18545,13 +18545,13 @@ var require_escape_html = __commonJS({
           default:
             continue;
         }
-        if (lastIndex !== index) {
-          html += str2.substring(lastIndex, index);
+        if (lastIndex !== index2) {
+          html += str2.substring(lastIndex, index2);
         }
-        lastIndex = index + 1;
+        lastIndex = index2 + 1;
         html += escape2;
       }
-      return lastIndex !== index ? html + str2.substring(lastIndex, index) : html;
+      return lastIndex !== index2 ? html + str2.substring(lastIndex, index2) : html;
     }
   }
 });
@@ -18904,22 +18904,22 @@ var require_content_type = __commonJS({
       if (typeof header !== "string") {
         throw new TypeError("argument string is required to be a string");
       }
-      var index = header.indexOf(";");
-      var type = index !== -1 ? header.slice(0, index).trim() : header.trim();
+      var index2 = header.indexOf(";");
+      var type = index2 !== -1 ? header.slice(0, index2).trim() : header.trim();
       if (!TYPE_REGEXP.test(type)) {
         throw new TypeError("invalid media type");
       }
       var obj = new ContentType(type.toLowerCase());
-      if (index !== -1) {
+      if (index2 !== -1) {
         var key;
         var match2;
         var value;
-        PARAM_REGEXP.lastIndex = index;
+        PARAM_REGEXP.lastIndex = index2;
         while (match2 = PARAM_REGEXP.exec(header)) {
-          if (match2.index !== index) {
+          if (match2.index !== index2) {
             throw new TypeError("invalid parameter format");
           }
-          index += match2[0].length;
+          index2 += match2[0].length;
           key = match2[1].toLowerCase();
           value = match2[2];
           if (value.charCodeAt(0) === 34) {
@@ -18930,7 +18930,7 @@ var require_content_type = __commonJS({
           }
           obj.parameters[key] = value;
         }
-        if (index !== header.length) {
+        if (index2 !== header.length) {
           throw new TypeError("invalid parameter format");
         }
       }
@@ -19859,25 +19859,25 @@ var require_utils3 = __commonJS({
     function acceptParams(str2) {
       var length = str2.length;
       var colonIndex = str2.indexOf(";");
-      var index = colonIndex === -1 ? length : colonIndex;
-      var ret = { value: str2.slice(0, index).trim(), quality: 1, params: {} };
-      while (index < length) {
-        var splitIndex = str2.indexOf("=", index);
+      var index2 = colonIndex === -1 ? length : colonIndex;
+      var ret = { value: str2.slice(0, index2).trim(), quality: 1, params: {} };
+      while (index2 < length) {
+        var splitIndex = str2.indexOf("=", index2);
         if (splitIndex === -1) break;
-        var colonIndex = str2.indexOf(";", index);
+        var colonIndex = str2.indexOf(";", index2);
         var endIndex = colonIndex === -1 ? length : colonIndex;
         if (splitIndex > endIndex) {
-          index = str2.lastIndexOf(";", splitIndex - 1) + 1;
+          index2 = str2.lastIndexOf(";", splitIndex - 1) + 1;
           continue;
         }
-        var key = str2.slice(index, splitIndex).trim();
+        var key = str2.slice(index2, splitIndex).trim();
         var value = str2.slice(splitIndex + 1, endIndex).trim();
         if (key === "q") {
           ret.quality = parseFloat(value);
         } else {
           ret.params[key] = value;
         }
-        index = endIndex + 1;
+        index2 = endIndex + 1;
       }
       return ret;
     }
@@ -20090,7 +20090,7 @@ var require_dist2 = __commonJS({
     function parse4(str2, options = {}) {
       const { encodePath = NOOP_VALUE } = options;
       const chars = [...str2];
-      let index = 0;
+      let index2 = 0;
       function consumeUntil(end) {
         const output = [];
         let path4 = "";
@@ -20103,44 +20103,44 @@ var require_dist2 = __commonJS({
           });
           path4 = "";
         }
-        while (index < chars.length) {
-          const value = chars[index++];
+        while (index2 < chars.length) {
+          const value = chars[index2++];
           if (value === end) {
             writePath();
             return output;
           }
           if (value === "\\") {
-            if (index === chars.length) {
-              throw new PathError(`Unexpected end after \\ at index ${index}`, str2);
+            if (index2 === chars.length) {
+              throw new PathError(`Unexpected end after \\ at index ${index2}`, str2);
             }
-            path4 += chars[index++];
+            path4 += chars[index2++];
             continue;
           }
           if (value === ":" || value === "*") {
             const type = value === ":" ? "param" : "wildcard";
             let name = "";
-            if (ID_START.test(chars[index])) {
+            if (ID_START.test(chars[index2])) {
               do {
-                name += chars[index++];
-              } while (ID_CONTINUE.test(chars[index]));
-            } else if (chars[index] === '"') {
-              let quoteStart = index;
-              while (index < chars.length) {
-                if (chars[++index] === '"') {
-                  index++;
+                name += chars[index2++];
+              } while (ID_CONTINUE.test(chars[index2]));
+            } else if (chars[index2] === '"') {
+              let quoteStart = index2;
+              while (index2 < chars.length) {
+                if (chars[++index2] === '"') {
+                  index2++;
                   quoteStart = 0;
                   break;
                 }
-                if (chars[index] === "\\")
-                  index++;
-                name += chars[index];
+                if (chars[index2] === "\\")
+                  index2++;
+                name += chars[index2];
               }
               if (quoteStart) {
                 throw new PathError(`Unterminated quote at index ${quoteStart}`, str2);
               }
             }
             if (!name) {
-              throw new PathError(`Missing parameter name at index ${index}`, str2);
+              throw new PathError(`Missing parameter name at index ${index2}`, str2);
             }
             writePath();
             output.push({ type, name });
@@ -20155,12 +20155,12 @@ var require_dist2 = __commonJS({
             continue;
           }
           if (value === "}" || value === "(" || value === ")" || value === "[" || value === "]" || value === "+" || value === "?" || value === "!") {
-            throw new PathError(`Unexpected ${value} at index ${index - 1}`, str2);
+            throw new PathError(`Unexpected ${value} at index ${index2 - 1}`, str2);
           }
           path4 += value;
         }
         if (end) {
-          throw new PathError(`Unexpected end at index ${index}, expected ${end}`, str2);
+          throw new PathError(`Unexpected end at index ${index2}, expected ${end}`, str2);
         }
         writePath();
         return output;
@@ -20294,12 +20294,12 @@ var require_dist2 = __commonJS({
       pattern += end ? "$" : "(?=" + escape2(delimiter) + "|$)";
       return { regexp: new RegExp(pattern, sensitive ? "" : "i"), keys };
     }
-    function flatten(tokens, index, result, callback) {
-      while (index < tokens.length) {
-        const token = tokens[index++];
+    function flatten(tokens, index2, result, callback) {
+      while (index2 < tokens.length) {
+        const token = tokens[index2++];
         if (token.type === "group") {
           const len = result.length;
-          flatten(token.tokens, 0, result, (seq) => flatten(tokens, index, seq, callback));
+          flatten(token.tokens, 0, result, (seq) => flatten(tokens, index2, seq, callback));
           result.length = len;
           continue;
         }
@@ -20313,10 +20313,10 @@ var require_dist2 = __commonJS({
       let wildcardBacktrack = "";
       let prevCaptureType = 0;
       let hasSegmentCapture = 0;
-      let index = 0;
-      function hasInSegment(index2, type) {
-        while (index2 < tokens.length) {
-          const token = tokens[index2++];
+      let index2 = 0;
+      function hasInSegment(index3, type) {
+        while (index3 < tokens.length) {
+          const token = tokens[index3++];
           if (token.type === type)
             return true;
           if (token.type === "text") {
@@ -20326,18 +20326,18 @@ var require_dist2 = __commonJS({
         }
         return false;
       }
-      function peekText(index2) {
+      function peekText(index3) {
         let result2 = "";
-        while (index2 < tokens.length) {
-          const token = tokens[index2++];
+        while (index3 < tokens.length) {
+          const token = tokens[index3++];
           if (token.type !== "text")
             break;
           result2 += token.value;
         }
         return result2;
       }
-      while (index < tokens.length) {
-        const token = tokens[index++];
+      while (index2 < tokens.length) {
+        const token = tokens[index2++];
         if (token.type === "text") {
           result += escape2(token.value);
           backtrack += token.value;
@@ -20352,7 +20352,7 @@ var require_dist2 = __commonJS({
             throw new PathError(`Missing text before "${token.name}" ${token.type}`, originalPath);
           }
           if (token.type === "param") {
-            result += hasSegmentCapture & 2 ? `(${negate(delimiter, backtrack)}+)` : hasInSegment(index, "wildcard") ? `(${negate(delimiter, peekText(index))}+)` : hasSegmentCapture & 1 ? `(${negate(delimiter, backtrack)}+|${escape2(backtrack)})` : `(${negate(delimiter, "")}+)`;
+            result += hasSegmentCapture & 2 ? `(${negate(delimiter, backtrack)}+)` : hasInSegment(index2, "wildcard") ? `(${negate(delimiter, peekText(index2))}+)` : hasSegmentCapture & 1 ? `(${negate(delimiter, backtrack)}+|${escape2(backtrack)})` : `(${negate(delimiter, "")}+)`;
             hasSegmentCapture |= prevCaptureType = 1;
           } else {
             result += hasSegmentCapture & 2 ? `(${negate(backtrack, "")}+)` : wildcardBacktrack ? `(${negate(wildcardBacktrack, "")}+|${negate(delimiter, "")}+)` : `([^]+)`;
@@ -20378,10 +20378,10 @@ var require_dist2 = __commonJS({
         return `(?:(?!${escape2(a)})[^${escape2(b)}])`;
       return `[^${escape2(a + b)}]`;
     }
-    function stringifyTokens(tokens, index) {
+    function stringifyTokens(tokens, index2) {
       let value = "";
-      while (index < tokens.length) {
-        const token = tokens[index++];
+      while (index2 < tokens.length) {
+        const token = tokens[index2++];
         if (token.type === "text") {
           value += escapeText(token.value);
           continue;
@@ -20391,11 +20391,11 @@ var require_dist2 = __commonJS({
           continue;
         }
         if (token.type === "param") {
-          value += ":" + stringifyName(token.name, tokens[index]);
+          value += ":" + stringifyName(token.name, tokens[index2]);
           continue;
         }
         if (token.type === "wildcard") {
-          value += "*" + stringifyName(token.name, tokens[index]);
+          value += "*" + stringifyName(token.name, tokens[index2]);
           continue;
         }
         throw new TypeError(`Unknown token type: ${token.type}`);
@@ -21384,17 +21384,17 @@ var require_charset = __commonJS({
         i
       };
     }
-    function getCharsetPriority(charset, accepted, index) {
+    function getCharsetPriority(charset, accepted, index2) {
       var priority = { o: -1, q: 0, s: 0 };
       for (var i = 0; i < accepted.length; i++) {
-        var spec = specify(charset, accepted[i], index);
+        var spec = specify(charset, accepted[i], index2);
         if (spec && (priority.s - spec.s || priority.q - spec.q || priority.o - spec.o) < 0) {
           priority = spec;
         }
       }
       return priority;
     }
-    function specify(charset, spec, index) {
+    function specify(charset, spec, index2) {
       var s2 = 0;
       if (spec.charset.toLowerCase() === charset.toLowerCase()) {
         s2 |= 1;
@@ -21402,7 +21402,7 @@ var require_charset = __commonJS({
         return null;
       }
       return {
-        i: index,
+        i: index2,
         o: spec.i,
         q: spec.q,
         s: s2
@@ -21413,8 +21413,8 @@ var require_charset = __commonJS({
       if (!provided) {
         return accepts.filter(isQuality).sort(compareSpecs).map(getFullCharset);
       }
-      var priorities = provided.map(function getPriority(type, index) {
-        return getCharsetPriority(type, accepts, index);
+      var priorities = provided.map(function getPriority(type, index2) {
+        return getCharsetPriority(type, accepts, index2);
       });
       return priorities.filter(isQuality).sort(compareSpecs).map(function getCharset(priority) {
         return provided[priorities.indexOf(priority)];
@@ -21482,17 +21482,17 @@ var require_encoding = __commonJS({
         i
       };
     }
-    function getEncodingPriority(encoding, accepted, index) {
+    function getEncodingPriority(encoding, accepted, index2) {
       var priority = { encoding, o: -1, q: 0, s: 0 };
       for (var i = 0; i < accepted.length; i++) {
-        var spec = specify(encoding, accepted[i], index);
+        var spec = specify(encoding, accepted[i], index2);
         if (spec && (priority.s - spec.s || priority.q - spec.q || priority.o - spec.o) < 0) {
           priority = spec;
         }
       }
       return priority;
     }
-    function specify(encoding, spec, index) {
+    function specify(encoding, spec, index2) {
       var s2 = 0;
       if (spec.encoding.toLowerCase() === encoding.toLowerCase()) {
         s2 |= 1;
@@ -21501,7 +21501,7 @@ var require_encoding = __commonJS({
       }
       return {
         encoding,
-        i: index,
+        i: index2,
         o: spec.i,
         q: spec.q,
         s: s2
@@ -21526,8 +21526,8 @@ var require_encoding = __commonJS({
       if (!provided) {
         return accepts.filter(isQuality).sort(comparator).map(getFullEncoding);
       }
-      var priorities = provided.map(function getPriority(type, index) {
-        return getEncodingPriority(type, accepts, index);
+      var priorities = provided.map(function getPriority(type, index2) {
+        return getEncodingPriority(type, accepts, index2);
       });
       return priorities.filter(isQuality).sort(comparator).map(function getEncoding(priority) {
         return provided[priorities.indexOf(priority)];
@@ -21586,17 +21586,17 @@ var require_language = __commonJS({
         full
       };
     }
-    function getLanguagePriority(language, accepted, index) {
+    function getLanguagePriority(language, accepted, index2) {
       var priority = { o: -1, q: 0, s: 0 };
       for (var i = 0; i < accepted.length; i++) {
-        var spec = specify(language, accepted[i], index);
+        var spec = specify(language, accepted[i], index2);
         if (spec && (priority.s - spec.s || priority.q - spec.q || priority.o - spec.o) < 0) {
           priority = spec;
         }
       }
       return priority;
     }
-    function specify(language, spec, index) {
+    function specify(language, spec, index2) {
       var p = parseLanguage(language);
       if (!p) return null;
       var s2 = 0;
@@ -21610,7 +21610,7 @@ var require_language = __commonJS({
         return null;
       }
       return {
-        i: index,
+        i: index2,
         o: spec.i,
         q: spec.q,
         s: s2
@@ -21621,8 +21621,8 @@ var require_language = __commonJS({
       if (!provided) {
         return accepts.filter(isQuality).sort(compareSpecs).map(getFullLanguage);
       }
-      var priorities = provided.map(function getPriority(type, index) {
-        return getLanguagePriority(type, accepts, index);
+      var priorities = provided.map(function getPriority(type, index2) {
+        return getLanguagePriority(type, accepts, index2);
       });
       return priorities.filter(isQuality).sort(compareSpecs).map(function getLanguage(priority) {
         return provided[priorities.indexOf(priority)];
@@ -21687,17 +21687,17 @@ var require_mediaType = __commonJS({
         i
       };
     }
-    function getMediaTypePriority(type, accepted, index) {
+    function getMediaTypePriority(type, accepted, index2) {
       var priority = { o: -1, q: 0, s: 0 };
       for (var i = 0; i < accepted.length; i++) {
-        var spec = specify(type, accepted[i], index);
+        var spec = specify(type, accepted[i], index2);
         if (spec && (priority.s - spec.s || priority.q - spec.q || priority.o - spec.o) < 0) {
           priority = spec;
         }
       }
       return priority;
     }
-    function specify(type, spec, index) {
+    function specify(type, spec, index2) {
       var p = parseMediaType(type);
       var s2 = 0;
       if (!p) {
@@ -21724,7 +21724,7 @@ var require_mediaType = __commonJS({
         }
       }
       return {
-        i: index,
+        i: index2,
         o: spec.i,
         q: spec.q,
         s: s2
@@ -21735,8 +21735,8 @@ var require_mediaType = __commonJS({
       if (!provided) {
         return accepts.filter(isQuality).sort(compareSpecs).map(getFullType);
       }
-      var priorities = provided.map(function getPriority(type, index) {
-        return getMediaTypePriority(type, accepts, index);
+      var priorities = provided.map(function getPriority(type, index2) {
+        return getMediaTypePriority(type, accepts, index2);
       });
       return priorities.filter(isQuality).sort(compareSpecs).map(function getType(priority) {
         return provided[priorities.indexOf(priority)];
@@ -21753,22 +21753,22 @@ var require_mediaType = __commonJS({
     }
     function quoteCount(string4) {
       var count2 = 0;
-      var index = 0;
-      while ((index = string4.indexOf('"', index)) !== -1) {
+      var index2 = 0;
+      while ((index2 = string4.indexOf('"', index2)) !== -1) {
         count2++;
-        index++;
+        index2++;
       }
       return count2;
     }
     function splitKeyValuePair(str2) {
-      var index = str2.indexOf("=");
+      var index2 = str2.indexOf("=");
       var key;
       var val;
-      if (index === -1) {
+      if (index2 === -1) {
         key = str2;
       } else {
-        key = str2.slice(0, index);
-        val = str2.slice(index + 1);
+        key = str2.slice(0, index2);
+        val = str2.slice(index2 + 1);
       }
       return [key, val];
     }
@@ -22020,13 +22020,13 @@ var require_range_parser = __commonJS({
       if (typeof str2 !== "string") {
         throw new TypeError("argument str must be a string");
       }
-      var index = str2.indexOf("=");
-      if (index === -1) {
+      var index2 = str2.indexOf("=");
+      if (index2 === -1) {
         return -2;
       }
-      var arr = str2.slice(index + 1).split(",");
+      var arr = str2.slice(index2 + 1).split(",");
       var ranges = [];
-      ranges.type = str2.slice(0, index);
+      ranges.type = str2.slice(0, index2);
       for (var i = 0; i < arr.length; i++) {
         var indexOf = arr[i].indexOf("-");
         if (indexOf === -1) {
@@ -22082,11 +22082,11 @@ var require_range_parser = __commonJS({
       combined.type = ranges.type;
       return combined;
     }
-    function mapWithIndex(range, index) {
+    function mapWithIndex(range, index2) {
       return {
         start: range.start,
         end: range.end,
-        index
+        index: index2
       };
     }
     function mapWithoutIndex(range) {
@@ -22179,8 +22179,8 @@ var require_request = __commonJS({
         return proto;
       }
       var header = this.get("X-Forwarded-Proto") || proto;
-      var index = header.indexOf(",");
-      return index !== -1 ? header.substring(0, index).trim() : header.trim();
+      var index2 = header.indexOf(",");
+      return index2 !== -1 ? header.substring(0, index2).trim() : header.trim();
     });
     defineGetter(req, "secure", function secure() {
       return this.protocol === "https";
@@ -22219,8 +22219,8 @@ var require_request = __commonJS({
       var host = this.host;
       if (!host) return;
       var offset = host[0] === "[" ? host.indexOf("]") + 1 : 0;
-      var index = host.indexOf(":", offset);
-      return index !== -1 ? host.substring(0, index) : host;
+      var index2 = host.indexOf(":", offset);
+      return index2 !== -1 ? host.substring(0, index2) : host;
     });
     defineGetter(req, "fresh", function() {
       var method = this.method;
@@ -22360,18 +22360,18 @@ var require_content_disposition = __commonJS({
       if (!match2) {
         throw new TypeError("invalid type format");
       }
-      var index = match2[0].length;
+      var index2 = match2[0].length;
       var type = match2[1].toLowerCase();
       var key;
       var names = [];
       var params = {};
       var value;
-      index = PARAM_REGEXP.lastIndex = match2[0].slice(-1) === ";" ? index - 1 : index;
+      index2 = PARAM_REGEXP.lastIndex = match2[0].slice(-1) === ";" ? index2 - 1 : index2;
       while (match2 = PARAM_REGEXP.exec(string4)) {
-        if (match2.index !== index) {
+        if (match2.index !== index2) {
           throw new TypeError("invalid parameter format");
         }
-        index += match2[0].length;
+        index2 += match2[0].length;
         key = match2[1].toLowerCase();
         value = match2[2];
         if (names.indexOf(key) !== -1) {
@@ -22392,7 +22392,7 @@ var require_content_disposition = __commonJS({
         }
         params[key] = value;
       }
-      if (index !== -1 && index !== string4.length) {
+      if (index2 !== -1 && index2 !== string4.length) {
         throw new TypeError("invalid parameter format");
       }
       return new ContentDisposition(type, params);
@@ -22499,20 +22499,20 @@ var require_cookie = __commonJS({
       var len = str2.length;
       if (len < 2) return obj;
       var dec = opt && opt.decode || decode;
-      var index = 0;
+      var index2 = 0;
       var eqIdx = 0;
       var endIdx = 0;
       do {
-        eqIdx = str2.indexOf("=", index);
+        eqIdx = str2.indexOf("=", index2);
         if (eqIdx === -1) break;
-        endIdx = str2.indexOf(";", index);
+        endIdx = str2.indexOf(";", index2);
         if (endIdx === -1) {
           endIdx = len;
         } else if (eqIdx > endIdx) {
-          index = str2.lastIndexOf(";", eqIdx - 1) + 1;
+          index2 = str2.lastIndexOf(";", eqIdx - 1) + 1;
           continue;
         }
-        var keyStartIdx = startIndex(str2, index, eqIdx);
+        var keyStartIdx = startIndex(str2, index2, eqIdx);
         var keyEndIdx = endIndex(str2, eqIdx, keyStartIdx);
         var key = str2.slice(keyStartIdx, keyEndIdx);
         if (!__hasOwnProperty.call(obj, key)) {
@@ -22525,21 +22525,21 @@ var require_cookie = __commonJS({
           var val = str2.slice(valStartIdx, valEndIdx);
           obj[key] = tryDecode(val, dec);
         }
-        index = endIdx + 1;
-      } while (index < len);
+        index2 = endIdx + 1;
+      } while (index2 < len);
       return obj;
     }
-    function startIndex(str2, index, max) {
+    function startIndex(str2, index2, max) {
       do {
-        var code = str2.charCodeAt(index);
-        if (code !== 32 && code !== 9) return index;
-      } while (++index < max);
+        var code = str2.charCodeAt(index2);
+        if (code !== 32 && code !== 9) return index2;
+      } while (++index2 < max);
       return max;
     }
-    function endIndex(str2, index, min) {
-      while (index > min) {
-        var code = str2.charCodeAt(--index);
-        if (code !== 32 && code !== 9) return index + 1;
+    function endIndex(str2, index2, min) {
+      while (index2 > min) {
+        var code = str2.charCodeAt(--index2);
+        if (code !== 32 && code !== 9) return index2 + 1;
       }
       return min;
     }
@@ -25031,8 +25031,8 @@ var require_redaction = __commonJS({
         if (o[ns] === null) {
           return o;
         }
-        const { index } = next;
-        const nextPath = `${str2.substr(index, str2.length - 1)}`;
+        const { index: index2 } = next;
+        const nextPath = `${str2.substr(index2, str2.length - 1)}`;
         o[ns] = o[ns] || [];
         if (ns !== wildcardFirstSym && o[ns].length === 0) {
           o[ns].push(...o[wildcardFirstSym] || []);
@@ -25138,8 +25138,8 @@ var require_quick_format_unescaped = __commonJS({
         if (len === 1) return f;
         var objects = new Array(len);
         objects[0] = ss(f);
-        for (var index = 1; index < len; index++) {
-          objects[index] = ss(args[index]);
+        for (var index2 = 1; index2 < len; index2++) {
+          objects[index2] = ss(args[index2]);
         }
         return objects.join(" ");
       }
@@ -25910,8 +25910,8 @@ var require_on_exit_leak_free = __commonJS({
     }
     function clear(ref) {
       for (const event of ["exit", "beforeExit"]) {
-        const index = refs[event].indexOf(ref);
-        refs[event].splice(index, index + 1);
+        const index2 = refs[event].indexOf(ref);
+        refs[event].splice(index2, index2 + 1);
         uninstall(event);
       }
     }
@@ -26021,9 +26021,9 @@ var require_wait = __commonJS({
   "../../node_modules/.pnpm/thread-stream@3.1.0/node_modules/thread-stream/lib/wait.js"(exports, module) {
     "use strict";
     var MAX_TIMEOUT = 1e3;
-    function wait(state, index, expected, timeout, done) {
+    function wait(state, index2, expected, timeout, done) {
       const max = Date.now() + timeout;
-      let current = Atomics.load(state, index);
+      let current = Atomics.load(state, index2);
       if (current === expected) {
         done(null, "ok");
         return;
@@ -26035,7 +26035,7 @@ var require_wait = __commonJS({
         } else {
           setTimeout(() => {
             prior = current;
-            current = Atomics.load(state, index);
+            current = Atomics.load(state, index2);
             if (current === prior) {
               check2(backoff >= MAX_TIMEOUT ? MAX_TIMEOUT : backoff * 2);
             } else {
@@ -26047,9 +26047,9 @@ var require_wait = __commonJS({
       };
       check2(1);
     }
-    function waitDiff(state, index, expected, timeout, done) {
+    function waitDiff(state, index2, expected, timeout, done) {
       const max = Date.now() + timeout;
-      let current = Atomics.load(state, index);
+      let current = Atomics.load(state, index2);
       if (current !== expected) {
         done(null, "ok");
         return;
@@ -26059,7 +26059,7 @@ var require_wait = __commonJS({
           done(null, "timed-out");
         } else {
           setTimeout(() => {
-            current = Atomics.load(state, index);
+            current = Atomics.load(state, index2);
             if (current !== expected) {
               done(null, "ok");
             } else {
@@ -28143,9 +28143,9 @@ var require_multistream = __commonJS({
       }
       function remove(id) {
         const { streams } = this;
-        const index = streams.findIndex((s2) => s2.id === id);
-        if (index >= 0) {
-          streams.splice(index, 1);
+        const index2 = streams.findIndex((s2) => s2.id === id);
+        if (index2 >= 0) {
+          streams.splice(index2, 1);
           streams.sort(compareByLevel);
           this.minLevel = streams.length > 0 ? streams[0].level : -1;
         }
@@ -29870,46 +29870,46 @@ var require_cert_signatures = __commonJS({
     function x509Error(msg, cert) {
       return new Error("SASL channel binding: " + msg + " when parsing public certificate " + cert.toString("base64"));
     }
-    function readASN1Length(data, index) {
-      let length = data[index++];
-      if (length < 128) return { length, index };
+    function readASN1Length(data, index2) {
+      let length = data[index2++];
+      if (length < 128) return { length, index: index2 };
       const lengthBytes = length & 127;
       if (lengthBytes > 4) throw x509Error("bad length", data);
       length = 0;
       for (let i = 0; i < lengthBytes; i++) {
-        length = length << 8 | data[index++];
+        length = length << 8 | data[index2++];
       }
-      return { length, index };
+      return { length, index: index2 };
     }
-    function readASN1OID(data, index) {
-      if (data[index++] !== 6) throw x509Error("non-OID data", data);
-      const { length: OIDLength, index: indexAfterOIDLength } = readASN1Length(data, index);
-      index = indexAfterOIDLength;
-      const lastIndex = index + OIDLength;
-      const byte1 = data[index++];
+    function readASN1OID(data, index2) {
+      if (data[index2++] !== 6) throw x509Error("non-OID data", data);
+      const { length: OIDLength, index: indexAfterOIDLength } = readASN1Length(data, index2);
+      index2 = indexAfterOIDLength;
+      const lastIndex = index2 + OIDLength;
+      const byte1 = data[index2++];
       let oid = (byte1 / 40 >> 0) + "." + byte1 % 40;
-      while (index < lastIndex) {
+      while (index2 < lastIndex) {
         let value = 0;
-        while (index < lastIndex) {
-          const nextByte = data[index++];
+        while (index2 < lastIndex) {
+          const nextByte = data[index2++];
           value = value << 7 | nextByte & 127;
           if (nextByte < 128) break;
         }
         oid += "." + value;
       }
-      return { oid, index };
+      return { oid, index: index2 };
     }
-    function expectASN1Seq(data, index) {
-      if (data[index++] !== 48) throw x509Error("non-sequence data", data);
-      return readASN1Length(data, index);
+    function expectASN1Seq(data, index2) {
+      if (data[index2++] !== 48) throw x509Error("non-sequence data", data);
+      return readASN1Length(data, index2);
     }
-    function signatureAlgorithmHashFromCertificate(data, index) {
-      if (index === void 0) index = 0;
-      index = expectASN1Seq(data, index).index;
-      const { length: certInfoLength, index: indexAfterCertInfoLength } = expectASN1Seq(data, index);
-      index = indexAfterCertInfoLength + certInfoLength;
-      index = expectASN1Seq(data, index).index;
-      const { oid, index: indexAfterOID } = readASN1OID(data, index);
+    function signatureAlgorithmHashFromCertificate(data, index2) {
+      if (index2 === void 0) index2 = 0;
+      index2 = expectASN1Seq(data, index2).index;
+      const { length: certInfoLength, index: indexAfterCertInfoLength } = expectASN1Seq(data, index2);
+      index2 = indexAfterCertInfoLength + certInfoLength;
+      index2 = expectASN1Seq(data, index2).index;
+      const { oid, index: indexAfterOID } = readASN1OID(data, index2);
       switch (oid) {
         // RSA
         case "1.2.840.113549.1.1.4":
@@ -29941,12 +29941,12 @@ var require_cert_signatures = __commonJS({
           return "SHA-512";
         // RSASSA-PSS: hash is indicated separately
         case "1.2.840.113549.1.1.10": {
-          index = indexAfterOID;
-          index = expectASN1Seq(data, index).index;
-          if (data[index++] !== 160) throw x509Error("non-tag data", data);
-          index = readASN1Length(data, index).index;
-          index = expectASN1Seq(data, index).index;
-          const { oid: hashOID } = readASN1OID(data, index);
+          index2 = indexAfterOID;
+          index2 = expectASN1Seq(data, index2).index;
+          if (data[index2++] !== 160) throw x509Error("non-tag data", data);
+          index2 = readASN1Length(data, index2).index;
+          index2 = expectASN1Seq(data, index2).index;
+          const { oid: hashOID } = readASN1OID(data, index2);
           switch (hashOID) {
             // standalone hash OIDs
             case "1.2.840.113549.2.5":
@@ -32836,9 +32836,9 @@ var require_client = __commonJS({
             queryCallback(error40);
             query.callback = () => {
             };
-            const index = this._queryQueue.indexOf(query);
-            if (index > -1) {
-              this._queryQueue.splice(index, 1);
+            const index2 = this._queryQueue.indexOf(query);
+            if (index2 > -1) {
+              this._queryQueue.splice(index2, 1);
             }
             this._pulseQueryQueue();
           }, readTimeout);
@@ -33632,9 +33632,9 @@ var require_client2 = __commonJS({
           queryCallback(error40);
           query.callback = () => {
           };
-          const index = this._queryQueue.indexOf(query);
-          if (index > -1) {
-            this._queryQueue.splice(index, 1);
+          const index2 = this._queryQueue.indexOf(query);
+          if (index2 > -1) {
+            this._queryQueue.splice(index2, 1);
           }
           this._pulseQueryQueue();
         }, readTimeout);
@@ -35418,22 +35418,22 @@ var require_dist3 = __commonJS2({
       if (len < 2)
         return obj;
       const dec = options?.decode || decode;
-      let index = 0;
+      let index2 = 0;
       do {
-        const eqIdx = eqIndex(str2, index, len);
+        const eqIdx = eqIndex(str2, index2, len);
         if (eqIdx === -1)
           break;
-        const endIdx = endIndex(str2, index, len);
+        const endIdx = endIndex(str2, index2, len);
         if (eqIdx > endIdx) {
-          index = str2.lastIndexOf(";", eqIdx - 1) + 1;
+          index2 = str2.lastIndexOf(";", eqIdx - 1) + 1;
           continue;
         }
-        const key = valueSlice(str2, index, eqIdx);
+        const key = valueSlice(str2, index2, eqIdx);
         if (obj[key] === void 0) {
           obj[key] = dec(valueSlice(str2, eqIdx + 1, endIdx));
         }
-        index = endIdx + 1;
-      } while (index < len);
+        index2 = endIdx + 1;
+      } while (index2 < len);
       return obj;
     }
     function stringifyCookie(cookie, options) {
@@ -35543,11 +35543,11 @@ var require_dist3 = __commonJS2({
         name: valueSlice(str2, 0, eqIdx),
         value: dec(valueSlice(str2, eqIdx + 1, endIdx))
       };
-      let index = endIdx + 1;
-      while (index < len) {
-        const endIdx2 = endIndex(str2, index, len);
-        const eqIdx2 = eqIndex(str2, index, endIdx2);
-        const attr = eqIdx2 === -1 ? valueSlice(str2, index, endIdx2) : valueSlice(str2, index, eqIdx2);
+      let index2 = endIdx + 1;
+      while (index2 < len) {
+        const endIdx2 = endIndex(str2, index2, len);
+        const eqIdx2 = eqIndex(str2, index2, endIdx2);
+        const attr = eqIdx2 === -1 ? valueSlice(str2, index2, endIdx2) : valueSlice(str2, index2, eqIdx2);
         const val = eqIdx2 === -1 ? void 0 : valueSlice(str2, eqIdx2 + 1, endIdx2);
         switch (attr.toLowerCase()) {
           case "httponly":
@@ -35593,17 +35593,17 @@ var require_dist3 = __commonJS2({
             }
             break;
         }
-        index = endIdx2 + 1;
+        index2 = endIdx2 + 1;
       }
       return setCookie;
     }
     function endIndex(str2, min, len) {
-      const index = str2.indexOf(";", min);
-      return index === -1 ? len : index;
+      const index2 = str2.indexOf(";", min);
+      return index2 === -1 ? len : index2;
     }
     function eqIndex(str2, min, max) {
-      const index = str2.indexOf("=", min);
-      return index < max ? index : -1;
+      const index2 = str2.indexOf("=", min);
+      return index2 < max ? index2 : -1;
     }
     function valueSlice(str2, min, max) {
       let start = min;
@@ -38858,11 +38858,11 @@ function splitPrefixSuffix(input, options = {}) {
     prefixIndex++;
   }
   while (suffixIndex > prefixIndex) {
-    const index = suffixIndex - 1;
-    const char2 = input.charAt(index);
+    const index2 = suffixIndex - 1;
+    const char2 = input.charAt(index2);
     if (!suffixCharacters.includes(char2))
       break;
-    suffixIndex = index;
+    suffixIndex = index2;
   }
   return [
     input.slice(0, prefixIndex),
@@ -45867,10 +45867,10 @@ var ZodObject = class _ZodObject extends ZodType {
   //   }) as any;
   //   return merged;
   // }
-  catchall(index) {
+  catchall(index2) {
     return new _ZodObject({
       ...this._def,
-      catchall: index
+      catchall: index2
     });
   }
   pick(mask) {
@@ -46188,9 +46188,9 @@ function mergeValues(a, b) {
       return { valid: false };
     }
     const newArray = [];
-    for (let index = 0; index < a.length; index++) {
-      const itemA = a[index];
-      const itemB = b[index];
+    for (let index2 = 0; index2 < a.length; index2++) {
+      const itemA = a[index2];
+      const itemB = b[index2];
       const sharedValue = mergeValues(itemA, itemB);
       if (!sharedValue.valid) {
         return { valid: false };
@@ -46396,10 +46396,10 @@ var ZodMap = class extends ZodType {
     }
     const keyType = this._def.keyType;
     const valueType = this._def.valueType;
-    const pairs = [...ctx.data.entries()].map(([key, value], index) => {
+    const pairs = [...ctx.data.entries()].map(([key, value], index2) => {
       return {
-        key: keyType._parse(new ParseInputLazyPath(ctx, key, ctx.path, [index, "key"])),
-        value: valueType._parse(new ParseInputLazyPath(ctx, value, ctx.path, [index, "value"]))
+        key: keyType._parse(new ParseInputLazyPath(ctx, key, ctx.path, [index2, "key"])),
+        value: valueType._parse(new ParseInputLazyPath(ctx, value, ctx.path, [index2, "value"]))
       };
     });
     if (ctx.common.async) {
@@ -48871,8 +48871,8 @@ function haveSameKeys(left, right) {
   if (leftKeys.length !== rightKeys.length) {
     return false;
   }
-  for (const [index, key] of leftKeys.entries()) {
-    if (key !== rightKeys[index]) {
+  for (const [index2, key] of leftKeys.entries()) {
+    if (key !== rightKeys[index2]) {
       return false;
     }
   }
@@ -50869,6 +50869,115 @@ var SelectionProxyHandler = class _SelectionProxyHandler {
   }
 };
 
+// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.20.0_pg@8.22.0/node_modules/drizzle-orm/pg-core/indexes.js
+var IndexBuilderOn = class {
+  constructor(unique, name) {
+    this.unique = unique;
+    this.name = name;
+  }
+  static [entityKind] = "PgIndexBuilderOn";
+  on(...columns) {
+    return new IndexBuilder(
+      columns.map((it) => {
+        if (is(it, SQL)) {
+          return it;
+        }
+        it = it;
+        const clonedIndexedColumn = new IndexedColumn(it.name, !!it.keyAsName, it.columnType, it.indexConfig);
+        it.indexConfig = JSON.parse(JSON.stringify(it.defaultConfig));
+        return clonedIndexedColumn;
+      }),
+      this.unique,
+      false,
+      this.name
+    );
+  }
+  onOnly(...columns) {
+    return new IndexBuilder(
+      columns.map((it) => {
+        if (is(it, SQL)) {
+          return it;
+        }
+        it = it;
+        const clonedIndexedColumn = new IndexedColumn(it.name, !!it.keyAsName, it.columnType, it.indexConfig);
+        it.indexConfig = it.defaultConfig;
+        return clonedIndexedColumn;
+      }),
+      this.unique,
+      true,
+      this.name
+    );
+  }
+  /**
+   * Specify what index method to use. Choices are `btree`, `hash`, `gist`, `spgist`, `gin`, `brin`, or user-installed access methods like `bloom`. The default method is `btree.
+   *
+   * If you have the `pg_vector` extension installed in your database, you can use the `hnsw` and `ivfflat` options, which are predefined types.
+   *
+   * **You can always specify any string you want in the method, in case Drizzle doesn't have it natively in its types**
+   *
+   * @param method The name of the index method to be used
+   * @param columns
+   * @returns
+   */
+  using(method, ...columns) {
+    return new IndexBuilder(
+      columns.map((it) => {
+        if (is(it, SQL)) {
+          return it;
+        }
+        it = it;
+        const clonedIndexedColumn = new IndexedColumn(it.name, !!it.keyAsName, it.columnType, it.indexConfig);
+        it.indexConfig = JSON.parse(JSON.stringify(it.defaultConfig));
+        return clonedIndexedColumn;
+      }),
+      this.unique,
+      true,
+      this.name,
+      method
+    );
+  }
+};
+var IndexBuilder = class {
+  static [entityKind] = "PgIndexBuilder";
+  /** @internal */
+  config;
+  constructor(columns, unique, only, name, method = "btree") {
+    this.config = {
+      name,
+      columns,
+      unique,
+      only,
+      method
+    };
+  }
+  concurrently() {
+    this.config.concurrently = true;
+    return this;
+  }
+  with(obj) {
+    this.config.with = obj;
+    return this;
+  }
+  where(condition) {
+    this.config.where = condition;
+    return this;
+  }
+  /** @internal */
+  build(table) {
+    return new Index(this.config, table);
+  }
+};
+var Index = class {
+  static [entityKind] = "PgIndex";
+  config;
+  constructor(config2, table) {
+    this.config = { ...config2, table };
+  }
+};
+function index(name) {
+  return new IndexBuilderOn(false, name);
+}
+
 // ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.20.0_pg@8.22.0/node_modules/drizzle-orm/casing.js
 function toSnakeCase(input) {
   const words = input.replace(/['\u2019]/g, "").match(/[\da-z]+|[A-Z]+(?![a-z])|[A-Z][\da-z]+/g) ?? [];
@@ -51086,8 +51195,8 @@ var PgDialect = class {
       return void 0;
     }
     const joinsArray = [];
-    for (const [index, joinMeta] of joins.entries()) {
-      if (index === 0) {
+    for (const [index2, joinMeta] of joins.entries()) {
+      if (index2 === 0) {
         joinsArray.push(sql` `);
       }
       const table = joinMeta.table;
@@ -51114,7 +51223,7 @@ var PgDialect = class {
           sql`${sql.raw(joinMeta.joinType)} join${lateralSql} ${table}${onSql}`
         );
       }
-      if (index < joins.length - 1) {
+      if (index2 < joins.length - 1) {
         joinsArray.push(sql` `);
       }
     }
@@ -56982,11 +57091,11 @@ var $ZodDate = /* @__PURE__ */ $constructor("$ZodDate", (inst, def) => {
     return payload;
   };
 });
-function handleArrayResult(result, final, index) {
+function handleArrayResult(result, final, index2) {
   if (result.issues.length) {
-    final.issues.push(...prefixIssues(index, result.issues));
+    final.issues.push(...prefixIssues(index2, result.issues));
   }
-  final.value[index] = result.value;
+  final.value[index2] = result.value;
 }
 var $ZodArray = /* @__PURE__ */ $constructor("$ZodArray", (inst, def) => {
   $ZodType.init(inst, def);
@@ -57370,14 +57479,14 @@ function mergeValues2(a, b) {
       return { valid: false, mergeErrorPath: [] };
     }
     const newArray = [];
-    for (let index = 0; index < a.length; index++) {
-      const itemA = a[index];
-      const itemB = b[index];
+    for (let index2 = 0; index2 < a.length; index2++) {
+      const itemA = a[index2];
+      const itemB = b[index2];
       const sharedValue = mergeValues2(itemA, itemB);
       if (!sharedValue.valid) {
         return {
           valid: false,
-          mergeErrorPath: [index, ...sharedValue.mergeErrorPath]
+          mergeErrorPath: [index2, ...sharedValue.mergeErrorPath]
         };
       }
       newArray.push(sharedValue.data);
@@ -57469,11 +57578,11 @@ var $ZodTuple = /* @__PURE__ */ $constructor("$ZodTuple", (inst, def) => {
     return payload;
   };
 });
-function handleTupleResult(result, final, index) {
+function handleTupleResult(result, final, index2) {
   if (result.issues.length) {
-    final.issues.push(...prefixIssues(index, result.issues));
+    final.issues.push(...prefixIssues(index2, result.issues));
   }
-  final.value[index] = result.value;
+  final.value[index2] = result.value;
 }
 var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
   $ZodType.init(inst, def);
@@ -65876,13 +65985,19 @@ var modelsTable = pgTable("models", {
 var insertModelSchema = createInsertSchema(modelsTable).omit({ id: true, createdAt: true, updatedAt: true });
 
 // ../../lib/db/src/schema/conversations.ts
-var conversations = pgTable("conversations", {
-  id: serial("id").primaryKey(),
-  userId: text("user_id"),
-  modelId: integer("model_id").notNull().references(() => modelsTable.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
-});
+var conversations = pgTable(
+  "conversations",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id"),
+    modelId: integer("model_id").notNull().references(() => modelsTable.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => [
+    index("conversations_user_model_idx").on(table.userId, table.modelId)
+  ]
+);
 var insertConversationSchema = createInsertSchema(conversations).omit({
   id: true,
   createdAt: true
@@ -67063,10 +67178,10 @@ function concatBytes(buffers) {
     length += buffer.length;
   }
   const output = new Uint8Array(length);
-  let index = 0;
+  let index2 = 0;
   for (const buffer of buffers) {
-    output.set(buffer, index);
-    index += buffer.length;
+    output.set(buffer, index2);
+    index2 += buffer.length;
   }
   return output;
 }
@@ -67514,9 +67629,9 @@ var SSEDecoder = class {
   }
 };
 function partition(str2, delimiter) {
-  const index = str2.indexOf(delimiter);
-  if (index !== -1) {
-    return [str2.substring(0, index), delimiter, str2.substring(index + delimiter.length)];
+  const index2 = str2.indexOf(delimiter);
+  if (index2 !== -1) {
+    return [str2.substring(0, index2), delimiter, str2.substring(index2 + delimiter.length)];
   }
   return [str2, "", ""];
 }
@@ -68256,13 +68371,13 @@ var createPathTagFunction = (pathEncoder = encodeURIPath) => function path4(stat
     return statics[0];
   let postPath = false;
   const invalidSegments = [];
-  const path5 = statics.reduce((previousValue, currentValue, index) => {
+  const path5 = statics.reduce((previousValue, currentValue, index2) => {
     if (/[?#]/.test(currentValue)) {
       postPath = true;
     }
-    const value = params[index];
+    const value = params[index2];
     let encoded = (postPath ? encodeURIComponent : pathEncoder)("" + value);
-    if (index !== params.length && (value == null || typeof value === "object" && // handle values from other realms
+    if (index2 !== params.length && (value == null || typeof value === "object" && // handle values from other realms
     value.toString === Object.getPrototypeOf(Object.getPrototypeOf(value.hasOwnProperty ?? EMPTY) ?? EMPTY)?.toString)) {
       encoded = value + "";
       invalidSegments.push({
@@ -68271,7 +68386,7 @@ var createPathTagFunction = (pathEncoder = encodeURIPath) => function path4(stat
         error: `Value of type ${Object.prototype.toString.call(value).slice(8, -1)} is not a valid path parameter`
       });
     }
-    return previousValue + currentValue + (index === params.length ? "" : encoded);
+    return previousValue + currentValue + (index2 === params.length ? "" : encoded);
   }, "");
   const pathOnly = path5.split(/[?#]/, 1)[0];
   const invalidSegmentPattern = /(?<=^|\/)(?:\.|%2e){1,2}(?=\/|$)/gi;
@@ -68551,9 +68666,9 @@ var EventStream = class {
     const listeners = __classPrivateFieldGet(this, _EventStream_listeners, "f")[event];
     if (!listeners)
       return this;
-    const index = listeners.findIndex((l) => l.listener === listener);
-    if (index >= 0)
-      listeners.splice(index, 1);
+    const index2 = listeners.findIndex((l) => l.listener === listener);
+    if (index2 >= 0)
+      listeners.splice(index2, 1);
     return this;
   }
   /**
@@ -69159,66 +69274,66 @@ function parseJSON(jsonString, allowPartial = Allow.ALL) {
 }
 var _parseJSON = (jsonString, allow) => {
   const length = jsonString.length;
-  let index = 0;
+  let index2 = 0;
   const markPartialJSON = (msg) => {
-    throw new PartialJSON(`${msg} at position ${index}`);
+    throw new PartialJSON(`${msg} at position ${index2}`);
   };
   const throwMalformedError = (msg) => {
-    throw new MalformedJSON(`${msg} at position ${index}`);
+    throw new MalformedJSON(`${msg} at position ${index2}`);
   };
   const parseAny = () => {
     skipBlank();
-    if (index >= length)
+    if (index2 >= length)
       markPartialJSON("Unexpected end of input");
-    if (jsonString[index] === '"')
+    if (jsonString[index2] === '"')
       return parseStr();
-    if (jsonString[index] === "{")
+    if (jsonString[index2] === "{")
       return parseObj();
-    if (jsonString[index] === "[")
+    if (jsonString[index2] === "[")
       return parseArr();
-    if (jsonString.substring(index, index + 4) === "null" || Allow.NULL & allow && length - index < 4 && "null".startsWith(jsonString.substring(index))) {
-      index += 4;
+    if (jsonString.substring(index2, index2 + 4) === "null" || Allow.NULL & allow && length - index2 < 4 && "null".startsWith(jsonString.substring(index2))) {
+      index2 += 4;
       return null;
     }
-    if (jsonString.substring(index, index + 4) === "true" || Allow.BOOL & allow && length - index < 4 && "true".startsWith(jsonString.substring(index))) {
-      index += 4;
+    if (jsonString.substring(index2, index2 + 4) === "true" || Allow.BOOL & allow && length - index2 < 4 && "true".startsWith(jsonString.substring(index2))) {
+      index2 += 4;
       return true;
     }
-    if (jsonString.substring(index, index + 5) === "false" || Allow.BOOL & allow && length - index < 5 && "false".startsWith(jsonString.substring(index))) {
-      index += 5;
+    if (jsonString.substring(index2, index2 + 5) === "false" || Allow.BOOL & allow && length - index2 < 5 && "false".startsWith(jsonString.substring(index2))) {
+      index2 += 5;
       return false;
     }
-    if (jsonString.substring(index, index + 8) === "Infinity" || Allow.INFINITY & allow && length - index < 8 && "Infinity".startsWith(jsonString.substring(index))) {
-      index += 8;
+    if (jsonString.substring(index2, index2 + 8) === "Infinity" || Allow.INFINITY & allow && length - index2 < 8 && "Infinity".startsWith(jsonString.substring(index2))) {
+      index2 += 8;
       return Infinity;
     }
-    if (jsonString.substring(index, index + 9) === "-Infinity" || Allow.MINUS_INFINITY & allow && 1 < length - index && length - index < 9 && "-Infinity".startsWith(jsonString.substring(index))) {
-      index += 9;
+    if (jsonString.substring(index2, index2 + 9) === "-Infinity" || Allow.MINUS_INFINITY & allow && 1 < length - index2 && length - index2 < 9 && "-Infinity".startsWith(jsonString.substring(index2))) {
+      index2 += 9;
       return -Infinity;
     }
-    if (jsonString.substring(index, index + 3) === "NaN" || Allow.NAN & allow && length - index < 3 && "NaN".startsWith(jsonString.substring(index))) {
-      index += 3;
+    if (jsonString.substring(index2, index2 + 3) === "NaN" || Allow.NAN & allow && length - index2 < 3 && "NaN".startsWith(jsonString.substring(index2))) {
+      index2 += 3;
       return NaN;
     }
     return parseNum();
   };
   const parseStr = () => {
-    const start = index;
+    const start = index2;
     let escape2 = false;
-    index++;
-    while (index < length && (jsonString[index] !== '"' || escape2 && jsonString[index - 1] === "\\")) {
-      escape2 = jsonString[index] === "\\" ? !escape2 : false;
-      index++;
+    index2++;
+    while (index2 < length && (jsonString[index2] !== '"' || escape2 && jsonString[index2 - 1] === "\\")) {
+      escape2 = jsonString[index2] === "\\" ? !escape2 : false;
+      index2++;
     }
-    if (jsonString.charAt(index) == '"') {
+    if (jsonString.charAt(index2) == '"') {
       try {
-        return JSON.parse(jsonString.substring(start, ++index - Number(escape2)));
+        return JSON.parse(jsonString.substring(start, ++index2 - Number(escape2)));
       } catch (e) {
         throwMalformedError(String(e));
       }
     } else if (Allow.STR & allow) {
       try {
-        return JSON.parse(jsonString.substring(start, index - Number(escape2)) + '"');
+        return JSON.parse(jsonString.substring(start, index2 - Number(escape2)) + '"');
       } catch (e) {
         return JSON.parse(jsonString.substring(start, jsonString.lastIndexOf("\\")) + '"');
       }
@@ -69226,17 +69341,17 @@ var _parseJSON = (jsonString, allow) => {
     markPartialJSON("Unterminated string literal");
   };
   const parseObj = () => {
-    index++;
+    index2++;
     skipBlank();
     const obj = {};
     try {
-      while (jsonString[index] !== "}") {
+      while (jsonString[index2] !== "}") {
         skipBlank();
-        if (index >= length && Allow.OBJ & allow)
+        if (index2 >= length && Allow.OBJ & allow)
           return obj;
         const key = parseStr();
         skipBlank();
-        index++;
+        index2++;
         try {
           const value = parseAny();
           Object.defineProperty(obj, key, { value, writable: true, enumerable: true, configurable: true });
@@ -69247,8 +69362,8 @@ var _parseJSON = (jsonString, allow) => {
             throw e;
         }
         skipBlank();
-        if (jsonString[index] === ",")
-          index++;
+        if (jsonString[index2] === ",")
+          index2++;
       }
     } catch (e) {
       if (Allow.OBJ & allow)
@@ -69256,18 +69371,18 @@ var _parseJSON = (jsonString, allow) => {
       else
         markPartialJSON("Expected '}' at end of object");
     }
-    index++;
+    index2++;
     return obj;
   };
   const parseArr = () => {
-    index++;
+    index2++;
     const arr = [];
     try {
-      while (jsonString[index] !== "]") {
+      while (jsonString[index2] !== "]") {
         arr.push(parseAny());
         skipBlank();
-        if (jsonString[index] === ",") {
-          index++;
+        if (jsonString[index2] === ",") {
+          index2++;
         }
       }
     } catch (e) {
@@ -69276,11 +69391,11 @@ var _parseJSON = (jsonString, allow) => {
       }
       markPartialJSON("Expected ']' at end of array");
     }
-    index++;
+    index2++;
     return arr;
   };
   const parseNum = () => {
-    if (index === 0) {
+    if (index2 === 0) {
       if (jsonString === "-" && Allow.NUM & allow)
         markPartialJSON("Not sure what '-' is");
       try {
@@ -69297,17 +69412,17 @@ var _parseJSON = (jsonString, allow) => {
         throwMalformedError(String(e));
       }
     }
-    const start = index;
-    if (jsonString[index] === "-")
-      index++;
-    while (jsonString[index] && !",]}".includes(jsonString[index]))
-      index++;
-    if (index == length && !(Allow.NUM & allow))
+    const start = index2;
+    if (jsonString[index2] === "-")
+      index2++;
+    while (jsonString[index2] && !",]}".includes(jsonString[index2]))
+      index2++;
+    if (index2 == length && !(Allow.NUM & allow))
       markPartialJSON("Unterminated number literal");
     try {
-      return JSON.parse(jsonString.substring(start, index));
+      return JSON.parse(jsonString.substring(start, index2));
     } catch (e) {
-      if (jsonString.substring(start, index) === "-" && Allow.NUM & allow)
+      if (jsonString.substring(start, index2) === "-" && Allow.NUM & allow)
         markPartialJSON("Not sure what '-' is");
       try {
         return JSON.parse(jsonString.substring(start, jsonString.lastIndexOf("e")));
@@ -69317,8 +69432,8 @@ var _parseJSON = (jsonString, allow) => {
     }
   };
   const skipBlank = () => {
-    while (index < length && " \n\r	".includes(jsonString[index])) {
-      index++;
+    while (index2 < length && " \n\r	".includes(jsonString[index2])) {
+      index2++;
     }
   };
   return parseAny();
@@ -69420,8 +69535,8 @@ var ChatCompletionStream = class _ChatCompletionStream extends AbstractChatCompl
         const message = getChatCompletionReadableStreamMessage(item);
         if (__classPrivateFieldGet(this, _ChatCompletionStream_currentChatCompletionSnapshot, "f")) {
           const toolCalls = __classPrivateFieldGet(this, _ChatCompletionStream_currentChatCompletionSnapshot, "f").choices[0]?.message.tool_calls;
-          for (const [index, id] of message.tool_call_ids?.entries() ?? []) {
-            const toolCall = toolCalls?.[index];
+          for (const [index2, id] of message.tool_call_ids?.entries() ?? []) {
+            const toolCall = toolCalls?.[index2];
             if (toolCall && id) {
               toolCall.id = id;
             }
@@ -69616,10 +69731,10 @@ var ChatCompletionStream = class _ChatCompletionStream extends AbstractChatCompl
     } else if (chunk.id) {
       Object.assign(snapshot, rest);
     }
-    for (const { delta, finish_reason, index, logprobs = null, ...other } of chunk.choices) {
-      let choice = snapshot.choices[index];
+    for (const { delta, finish_reason, index: index2, logprobs = null, ...other } of chunk.choices) {
+      let choice = snapshot.choices[index2];
       if (!choice) {
-        choice = snapshot.choices[index] = { finish_reason, index, message: {}, logprobs, ...other };
+        choice = snapshot.choices[index2] = { finish_reason, index: index2, message: {}, logprobs, ...other };
       }
       if (logprobs) {
         if (!choice.logprobs) {
@@ -69652,12 +69767,12 @@ var ChatCompletionStream = class _ChatCompletionStream extends AbstractChatCompl
       Object.assign(choice, other);
       if (!delta)
         continue;
-      __classPrivateFieldGet(this, _ChatCompletionStream_audioDoneChoiceIndexes, "f").delete(index);
+      __classPrivateFieldGet(this, _ChatCompletionStream_audioDoneChoiceIndexes, "f").delete(index2);
       const { audio, content, refusal, function_call, role, tool_calls, ...rest2 } = delta;
       assertIsEmpty(rest2);
       Object.assign(choice.message, rest2);
       if (audio?.expires_at != null && audio.id == null && audio.data == null && audio.transcript == null && content == null && refusal == null && function_call == null && role == null && tool_calls == null && Object.keys(rest2).length === 0) {
-        __classPrivateFieldGet(this, _ChatCompletionStream_audioDoneChoiceIndexes, "f").add(index);
+        __classPrivateFieldGet(this, _ChatCompletionStream_audioDoneChoiceIndexes, "f").add(index2);
       }
       if (refusal) {
         choice.message.refusal = (choice.message.refusal || "") + refusal;
@@ -69697,8 +69812,8 @@ var ChatCompletionStream = class _ChatCompletionStream extends AbstractChatCompl
       if (tool_calls) {
         if (!choice.message.tool_calls)
           choice.message.tool_calls = [];
-        for (const { index: index2, id, type, function: fn, ...rest3 } of tool_calls) {
-          const tool_call = (_e = choice.message.tool_calls)[index2] ?? (_e[index2] = {});
+        for (const { index: index3, id, type, function: fn, ...rest3 } of tool_calls) {
+          const tool_call = (_e = choice.message.tool_calls)[index3] ?? (_e[index3] = {});
           Object.assign(tool_call, rest3);
           if (id)
             tool_call.id = id;
@@ -69778,24 +69893,24 @@ function finalizeChatCompletion(snapshot, params, audioDoneChoiceIndexes) {
   const completion = {
     ...rest,
     id,
-    choices: choices.map(({ message, finish_reason, index, logprobs, ...choiceRest }) => {
+    choices: choices.map(({ message, finish_reason, index: index2, logprobs, ...choiceRest }) => {
       const { content = null, function_call, tool_calls, audio, ...messageRest } = message;
-      const finishReason = finish_reason ?? (audioDoneChoiceIndexes.has(index) && isCompleteAudio(audio) ? "stop" : null);
+      const finishReason = finish_reason ?? (audioDoneChoiceIndexes.has(index2) && isCompleteAudio(audio) ? "stop" : null);
       if (!finishReason) {
-        throw new OpenAIError(`missing finish_reason for choice ${index}`);
+        throw new OpenAIError(`missing finish_reason for choice ${index2}`);
       }
       const audioResponse = audio ? { audio } : {};
       const role = message.role;
       if (!role) {
-        throw new OpenAIError(`missing role for choice ${index}`);
+        throw new OpenAIError(`missing role for choice ${index2}`);
       }
       if (function_call) {
         const { arguments: args, name } = function_call;
         if (args == null) {
-          throw new OpenAIError(`missing function_call.arguments for choice ${index}`);
+          throw new OpenAIError(`missing function_call.arguments for choice ${index2}`);
         }
         if (!name) {
-          throw new OpenAIError(`missing function_call.name for choice ${index}`);
+          throw new OpenAIError(`missing function_call.name for choice ${index2}`);
         }
         return {
           ...choiceRest,
@@ -69807,14 +69922,14 @@ function finalizeChatCompletion(snapshot, params, audioDoneChoiceIndexes) {
             refusal: message.refusal ?? null
           },
           finish_reason: finishReason,
-          index,
+          index: index2,
           logprobs
         };
       }
       if (tool_calls) {
         return {
           ...choiceRest,
-          index,
+          index: index2,
           finish_reason: finishReason,
           logprobs,
           message: {
@@ -69827,15 +69942,15 @@ function finalizeChatCompletion(snapshot, params, audioDoneChoiceIndexes) {
               const { function: fn, type, id: id2, ...toolRest } = tool_call;
               const { arguments: args, name, ...fnRest } = fn || {};
               if (type == null) {
-                throw new OpenAIError(`missing choices[${index}].tool_calls[${i}].type
+                throw new OpenAIError(`missing choices[${index2}].tool_calls[${i}].type
 ${str(snapshot)}`);
               }
               if (name == null) {
-                throw new OpenAIError(`missing choices[${index}].tool_calls[${i}].function.name
+                throw new OpenAIError(`missing choices[${index2}].tool_calls[${i}].function.name
 ${str(snapshot)}`);
               }
               if (args == null) {
-                throw new OpenAIError(`missing choices[${index}].tool_calls[${i}].function.arguments
+                throw new OpenAIError(`missing choices[${index2}].tool_calls[${i}].function.arguments
 ${str(snapshot)}`);
               }
               return {
@@ -69852,7 +69967,7 @@ ${str(snapshot)}`);
         ...choiceRest,
         message: { ...messageRest, ...audioResponse, content, role, refusal: message.refusal ?? null },
         finish_reason: finishReason,
-        index,
+        index: index2,
         logprobs
       };
     }),
@@ -73375,19 +73490,19 @@ var AssistantStream = class extends EventStream {
           if (!isObj(deltaEntry)) {
             throw new Error(`Expected array delta entry to be an object but got: ${deltaEntry}`);
           }
-          const index = deltaEntry["index"];
-          if (index == null) {
+          const index2 = deltaEntry["index"];
+          if (index2 == null) {
             console.error(deltaEntry);
             throw new Error("Expected array delta entry to have an `index` property");
           }
-          if (typeof index !== "number") {
-            throw new Error(`Expected array delta entry \`index\` property to be a number but got ${index}`);
+          if (typeof index2 !== "number") {
+            throw new Error(`Expected array delta entry \`index\` property to be a number but got ${index2}`);
           }
-          const accEntry = accValue[index];
+          const accEntry = accValue[index2];
           if (accEntry == null) {
-            accValue[index] = deltaEntry;
+            accValue[index2] = deltaEntry;
           } else {
-            accValue[index] = this.accumulateDelta(accEntry, deltaEntry);
+            accValue[index2] = this.accumulateDelta(accEntry, deltaEntry);
           }
         }
         continue;
@@ -77386,7 +77501,20 @@ router3.get("/models/:modelId/conversations/:id/messages", async (req, res) => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const msgs = await db.select().from(messages).where(eq(messages.conversationId, params.data.id)).orderBy(messages.createdAt);
+  const { userId, email: email3 } = getUserIdentity(req);
+  const userIdentifier = email3 || userId;
+  const [conv] = await db.select().from(conversations).where(
+    and(
+      eq(conversations.id, params.data.id),
+      eq(conversations.modelId, params.data.modelId),
+      eq(conversations.userId, userIdentifier)
+    )
+  );
+  if (!conv) {
+    res.status(404).json({ error: "Conversation not found or access denied" });
+    return;
+  }
+  const msgs = await db.select().from(messages).where(eq(messages.conversationId, conv.id)).orderBy(messages.createdAt);
   res.json(ListModelMessagesResponse.parse(msgs));
 });
 router3.post("/models/:modelId/conversations/:id/messages", async (req, res) => {
@@ -77405,9 +77533,17 @@ router3.post("/models/:modelId/conversations/:id/messages", async (req, res) => 
     res.status(404).json({ error: "Model not found" });
     return;
   }
-  const [conv] = await db.select().from(conversations).where(and(eq(conversations.id, params.data.id), eq(conversations.modelId, params.data.modelId)));
+  const { userId, email: email3 } = getUserIdentity(req);
+  const userIdentifier = email3 || userId;
+  const [conv] = await db.select().from(conversations).where(
+    and(
+      eq(conversations.id, params.data.id),
+      eq(conversations.modelId, params.data.modelId),
+      eq(conversations.userId, userIdentifier)
+    )
+  );
   if (!conv) {
-    res.status(404).json({ error: "Conversation not found" });
+    res.status(404).json({ error: "Conversation not found or access denied" });
     return;
   }
   const [userMsg] = await db.insert(messages).values({ conversationId: conv.id, role: "user", content: parsed.data.content }).returning();

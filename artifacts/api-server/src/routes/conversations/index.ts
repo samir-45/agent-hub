@@ -162,10 +162,30 @@ router.get("/models/:modelId/conversations/:id/messages", async (req, res): Prom
     res.status(400).json({ error: params.error.message });
     return;
   }
+
+  const { userId, email } = getUserIdentity(req);
+  const userIdentifier = email || userId;
+
+  const [conv] = await db
+    .select()
+    .from(conversations)
+    .where(
+      and(
+        eq(conversations.id, params.data.id),
+        eq(conversations.modelId, params.data.modelId),
+        eq(conversations.userId, userIdentifier)
+      )
+    );
+
+  if (!conv) {
+    res.status(404).json({ error: "Conversation not found or access denied" });
+    return;
+  }
+
   const msgs = await db
     .select()
     .from(messages)
-    .where(eq(messages.conversationId, params.data.id))
+    .where(eq(messages.conversationId, conv.id))
     .orderBy(messages.createdAt);
   res.json(ListModelMessagesResponse.parse(msgs));
 });
@@ -193,13 +213,23 @@ router.post("/models/:modelId/conversations/:id/messages", async (req, res): Pro
     return;
   }
 
-  // Load conversation
+  const { userId, email } = getUserIdentity(req);
+  const userIdentifier = email || userId;
+
+  // Load conversation with strict ownership check
   const [conv] = await db
     .select()
     .from(conversations)
-    .where(and(eq(conversations.id, params.data.id), eq(conversations.modelId, params.data.modelId)));
+    .where(
+      and(
+        eq(conversations.id, params.data.id),
+        eq(conversations.modelId, params.data.modelId),
+        eq(conversations.userId, userIdentifier)
+      )
+    );
+
   if (!conv) {
-    res.status(404).json({ error: "Conversation not found" });
+    res.status(404).json({ error: "Conversation not found or access denied" });
     return;
   }
 
