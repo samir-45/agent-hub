@@ -159,6 +159,7 @@ export default function ModelDetail() {
           queryClient.invalidateQueries({ queryKey: getListModelConversationsQueryKey(modelId) });
           queryClient.invalidateQueries({ queryKey: getGetStatsQueryKey() });
           setActiveConvId(conv.id);
+          localStorage.setItem(`active_conv_${modelId}`, String(conv.id));
           setMessages([]);
         },
         onError: (err: any) => {
@@ -172,9 +173,9 @@ export default function ModelDetail() {
     );
   };
 
-  const handleSelectConversation = (convId: number) => {
-    if (convId === activeConvId) return;
+  const handleSelectConversation = useCallback((convId: number) => {
     setActiveConvId(convId);
+    localStorage.setItem(`active_conv_${modelId}`, String(convId));
     setMessages([]);
     // Fetch messages for this conversation
     const url = `/api/models/${modelId}/conversations/${convId}/messages`;
@@ -192,7 +193,23 @@ export default function ModelDetail() {
         }
       })
       .catch(() => {});
-  };
+  }, [modelId]);
+
+  // Auto-restore / auto-select active conversation on page load or reload
+  useEffect(() => {
+    if (!conversations || conversations.length === 0) return;
+
+    const savedConvId = localStorage.getItem(`active_conv_${modelId}`);
+    let targetConv = savedConvId ? conversations.find(c => c.id === Number(savedConvId)) : null;
+
+    if (!targetConv) {
+      targetConv = conversations[conversations.length - 1];
+    }
+
+    if (targetConv && (!activeConvId || !conversations.some(c => c.id === activeConvId))) {
+      handleSelectConversation(targetConv.id);
+    }
+  }, [conversations, modelId, activeConvId, handleSelectConversation]);
 
   const handleDeleteConversation = (convId: number) => {
     deleteConversation.mutate(
