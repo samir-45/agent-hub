@@ -209,8 +209,9 @@ router.post("/models/:modelId/conversations/:id/messages", async (req, res): Pro
 
   try {
     const userEmail = (req as any).auth?.claims?.email || (req as any).auth?.sessionClaims?.email;
+    const userRole = (req as any).auth?.claims?.publicMetadata?.role || (req as any).auth?.sessionClaims?.publicMetadata?.role;
     const userHeaderKey = req.headers["x-openrouter-key"] as string | undefined;
-    const openrouter = await getOpenRouterClient(userEmail, userHeaderKey);
+    const openrouter = await getOpenRouterClient(userEmail, userHeaderKey, userRole);
 
     if (model.webSearchEnabled) {
       // ── Pre-search: fetch web results and inject as context ────────────────

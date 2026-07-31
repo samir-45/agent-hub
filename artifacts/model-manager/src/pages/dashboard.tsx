@@ -388,6 +388,10 @@ export default function Dashboard() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && data.exists) {
+          if (data.source === 'env' && !isAdmin) {
+            // Non-admin users cannot use env key — force BYOK pairing
+            return;
+          }
           setKeyPaired(true);
           setKeySource(data.source);
           setMaskedKey(data.maskedKey);
@@ -456,6 +460,23 @@ export default function Dashboard() {
     } finally {
       setIsSavingKey(false);
     }
+  };
+
+  const handleUnpairApiKey = async () => {
+    try {
+      localStorage.removeItem('openrouter_user_api_key');
+    } catch {}
+    setKeyPaired(false);
+    setMaskedKey(null);
+    setApiKeyInput('');
+    setKeySource('none');
+    try {
+      await fetch('/api/settings/openrouter-api-key', { method: 'DELETE' });
+    } catch {}
+    toast({
+      title: 'API Key Disconnected',
+      description: 'Your OpenRouter API key has been removed.',
+    });
   };
 
   const filteredModels = useMemo(() => {
@@ -553,11 +574,18 @@ export default function Dashboard() {
                 }`}
                 onClick={() => setApiKeyDialogOpen(true)}
               >
-                <Key className="h-3.5 w-3.5 text-emerald-400" />
+                {keyPaired ? (
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                ) : (
+                  <Key className="h-3.5 w-3.5 text-amber-400" />
+                )}
                 {keySource === 'env'
                   ? 'Key Active (.env)'
                   : keyPaired
-                  ? 'Key Paired'
+                  ? 'Key Connected'
                   : 'Pair API Key'}
               </Button>
               <Link href="/settings">
@@ -805,7 +833,34 @@ export default function Dashboard() {
           </p>
 
           <div className="space-y-4 my-4">
-            {keySource === 'env' && (
+            {keyPaired && (
+              <div className="p-3.5 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-xs text-emerald-300 font-mono flex items-center justify-between shadow-md">
+                <div className="flex items-center gap-2.5">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                  </span>
+                  <div>
+                    <p className="font-bold text-emerald-400 text-xs flex items-center gap-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Key Connected & Active
+                    </p>
+                    <p className="text-[11px] text-emerald-200/80 font-mono mt-0.5">
+                      {maskedKey || 'sk-or-v1-••••••••'}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-[11px] text-destructive hover:text-destructive hover:bg-destructive/10 rounded-lg px-2.5 font-semibold"
+                  onClick={handleUnpairApiKey}
+                >
+                  Disconnect
+                </Button>
+              </div>
+            )}
+
+            {keySource === 'env' && !keyPaired && (
               <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-[11px] text-emerald-300 font-mono flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400" />
@@ -817,7 +872,7 @@ export default function Dashboard() {
 
             <div className="space-y-1.5">
               <label className="text-[11px] font-mono uppercase text-emerald-400 font-bold">
-                OpenRouter API Key (sk-or-v1-...)
+                {keyPaired ? 'Replace / Update API Key (sk-or-v1-...)' : 'OpenRouter API Key (sk-or-v1-...)'}
               </label>
               <Input
                 type="password"

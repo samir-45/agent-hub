@@ -200,9 +200,14 @@ export default function ImageStudio() {
 
     // Try API endpoint first
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const localKey = typeof window !== 'undefined' ? localStorage.getItem('openrouter_user_api_key') : null;
+      if (localKey) {
+        headers['x-openrouter-key'] = localKey;
+      }
       const res = await fetch('/api/images/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           prompt: prompt.trim(),
           model: selectedModel,

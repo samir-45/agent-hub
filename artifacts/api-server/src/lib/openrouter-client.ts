@@ -8,13 +8,19 @@ let cachedKey: string | null = null;
 let cacheExpiry = 0;
 const CACHE_TTL_MS = 60_000;
 
-export async function getOpenRouterApiKey(userEmail?: string, userHeaderKey?: string): Promise<string> {
+export async function getOpenRouterApiKey(userEmail?: string, userHeaderKey?: string, userRole?: string): Promise<string> {
   // 1. If user passed their own key in request headers, prioritize user's key
   if (userHeaderKey && userHeaderKey.startsWith("sk-or-")) {
     return userHeaderKey;
   }
 
-  // 2. Try to load key stored in database settings
+  // 2. ONLY allow server env fallback if the user is explicitly Admin/Owner
+  const isAdmin = userEmail === "mdmahinkhan851@gmail.com" || userRole === "admin";
+  if (isAdmin && process.env.OPENROUTER_API_KEY) {
+    return process.env.OPENROUTER_API_KEY;
+  }
+
+  // 3. Try to load key stored in database settings (if DB key exists)
   try {
     const [row] = await db
       .select()
@@ -29,15 +35,9 @@ export async function getOpenRouterApiKey(userEmail?: string, userHeaderKey?: st
     // Fall through
   }
 
-  // 3. ONLY allow server env fallback if the user is the Owner/Admin
-  const isAdmin = userEmail === "mdmahinkhan851@gmail.com";
-  if (isAdmin && process.env.OPENROUTER_API_KEY) {
-    return process.env.OPENROUTER_API_KEY;
-  }
-
   // 4. Strict BYOK enforcement for community users
   throw new Error(
-    "OpenRouter API Key Required: Please pair your own OpenRouter API key in Settings to execute prompts."
+    "OpenRouter API Key Required: Please pair your own OpenRouter API key (sk-or-v1-...) in the header or Settings to execute AI models."
   );
 }
 
@@ -46,8 +46,8 @@ export function invalidateApiKeyCache(): void {
   cacheExpiry = 0;
 }
 
-export async function getOpenRouterClient(userEmail?: string, userHeaderKey?: string): Promise<OpenAI> {
-  const apiKey = await getOpenRouterApiKey(userEmail, userHeaderKey);
+export async function getOpenRouterClient(userEmail?: string, userHeaderKey?: string, userRole?: string): Promise<OpenAI> {
+  const apiKey = await getOpenRouterApiKey(userEmail, userHeaderKey, userRole);
   return new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
     apiKey,

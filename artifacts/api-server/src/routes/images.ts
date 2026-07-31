@@ -130,7 +130,10 @@ imagesRouter.post("/generate", async (req, res) => {
 
     // Attempt 1: OpenRouter Image Endpoint
     try {
-      const apiKey = await getOpenRouterApiKey();
+      const userEmail = (req as any).auth?.claims?.email || (req as any).auth?.sessionClaims?.email;
+      const userRole = (req as any).auth?.claims?.publicMetadata?.role || (req as any).auth?.sessionClaims?.publicMetadata?.role;
+      const userHeaderKey = req.headers["x-openrouter-key"] as string | undefined;
+      const apiKey = await getOpenRouterApiKey(userEmail, userHeaderKey, userRole);
       const openRouterRes = await fetch("https://openrouter.ai/api/v1/images/generations", {
         method: "POST",
         headers: {

@@ -11,16 +11,20 @@ const SETTING_KEY = "openrouter_api_key";
 
 // GET /api/settings/openrouter-api-key
 // Returns masked key (never the raw value)
-router.get("/settings/openrouter-api-key", async (_req, res): Promise<void> => {
+router.get("/settings/openrouter-api-key", async (req, res): Promise<void> => {
   try {
+    const userEmail = (req as any).auth?.claims?.email || (req as any).auth?.sessionClaims?.email;
+    const userRole = (req as any).auth?.claims?.publicMetadata?.role || (req as any).auth?.sessionClaims?.publicMetadata?.role;
+    const isAdmin = userEmail === "mdmahinkhan851@gmail.com" || userRole === "admin";
+
     const [row] = await db
       .select()
       .from(settingsTable)
       .where(eq(settingsTable.key, SETTING_KEY));
 
     if (!row) {
-      // Check if env var is set as fallback
-      const hasEnvKey = Boolean(process.env.OPENROUTER_API_KEY);
+      // ONLY reveal env var to Admin user!
+      const hasEnvKey = isAdmin && Boolean(process.env.OPENROUTER_API_KEY);
       res.json({
         exists: hasEnvKey,
         source: hasEnvKey ? "env" : "none",
@@ -38,7 +42,11 @@ router.get("/settings/openrouter-api-key", async (_req, res): Promise<void> => {
       maskedKey: maskApiKey(raw),
     });
   } catch (err: any) {
-    const hasEnvKey = Boolean(process.env.OPENROUTER_API_KEY);
+    const userEmail = (req as any).auth?.claims?.email || (req as any).auth?.sessionClaims?.email;
+    const userRole = (req as any).auth?.claims?.publicMetadata?.role || (req as any).auth?.sessionClaims?.publicMetadata?.role;
+    const isAdmin = userEmail === "mdmahinkhan851@gmail.com" || userRole === "admin";
+
+    const hasEnvKey = isAdmin && Boolean(process.env.OPENROUTER_API_KEY);
     res.json({
       exists: hasEnvKey,
       source: hasEnvKey ? "env" : "none",
