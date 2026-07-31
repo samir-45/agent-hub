@@ -14,13 +14,6 @@ const rootDir = path.resolve(artifactDir, "../..");
 const apiDir = path.resolve(rootDir, "api");
 
 async function buildVercelFunction() {
-  // Clean api/ directory (except index.ts which is the source)
-  const fs = await import("node:fs");
-  for (const file of fs.readdirSync(apiDir)) {
-    if (file !== "index.ts") {
-      await rm(path.join(apiDir, file), { recursive: true, force: true });
-    }
-  }
 
   await esbuild({
     entryPoints: [path.resolve(artifactDir, "vercel-entry.ts")],
