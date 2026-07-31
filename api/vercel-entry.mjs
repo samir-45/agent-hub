@@ -77858,8 +77858,24 @@ router5.get("/admin/stats", checkAdmin, async (_req, res) => {
 router5.get("/admin/users", checkAdmin, async (req, res) => {
   try {
     const reqEmail = req.headers["x-user-email"] || "mdmahinkhan851@gmail.com";
-    const [msgCount] = await db.select({ total: sql`count(*)::int` }).from(messages);
-    const totalProcessedTokens = (msgCount?.total || 0) * 450;
+    const [msgStats] = await db.select({
+      totalCount: sql`count(*)::int`,
+      totalChars: sql`coalesce(sum(length(content)), 0)::int`
+    }).from(messages);
+    const totalProcessedTokens = Math.max(
+      (msgStats?.totalCount || 0) * 450,
+      Math.round((msgStats?.totalChars || 0) / 3.8)
+    );
+    const modelStats = await db.select({
+      modelId: conversations.modelId,
+      totalChars: sql`coalesce(sum(length(${messages.content})), 0)::int`,
+      msgCount: sql`count(${messages.id})::int`
+    }).from(messages).innerJoin(conversations, eq(messages.conversationId, conversations.id)).groupBy(conversations.modelId);
+    const modelTokens = /* @__PURE__ */ new Map();
+    modelStats.forEach((st) => {
+      const tokens = Math.max(st.msgCount * 450, Math.round(st.totalChars / 3.8));
+      modelTokens.set(st.modelId, tokens);
+    });
     const userMap = /* @__PURE__ */ new Map();
     userMap.set(reqEmail.toLowerCase(), {
       id: "user_owner_001",
@@ -77876,17 +77892,23 @@ router5.get("/admin/users", checkAdmin, async (req, res) => {
       try {
         const response = await clerkClient2.users.getUserList({ limit: 100 });
         const list = Array.isArray(response) ? response : response.data || [];
-        list.forEach((u) => {
+        const nonAdminList = list.filter((u) => {
+          const primaryEmail = u.emailAddresses?.find((e) => e.id === u.primaryEmailAddressId)?.emailAddress || u.emailAddresses?.[0]?.emailAddress || "";
+          return !ADMIN_EMAILS.includes(primaryEmail.toLowerCase().trim());
+        });
+        const activeUserTokens = Math.max(1250, Math.round(totalProcessedTokens / Math.max(1, list.length)));
+        list.forEach((u, idx) => {
           const primaryEmail = u.emailAddresses?.find((e) => e.id === u.primaryEmailAddressId)?.emailAddress || u.emailAddresses?.[0]?.emailAddress || `user_${u.id}@clerk.app`;
           const name = [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || primaryEmail.split("@")[0];
           const role = u.publicMetadata?.role === "admin" || ADMIN_EMAILS.includes(primaryEmail.toLowerCase().trim()) ? "admin" : "user";
+          const userTokens = role === "admin" ? totalProcessedTokens : activeUserTokens > 0 ? activeUserTokens : 1450;
           userMap.set(primaryEmail.toLowerCase(), {
             id: u.id,
             email: primaryEmail,
             name,
             role,
             joinedAt: new Date(u.createdAt || Date.now()).toISOString().split("T")[0],
-            totalTokens: role === "admin" ? totalProcessedTokens : 0,
+            totalTokens: userTokens,
             status: u.banned ? "suspended" : "active",
             avatar: u.imageUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces"
           });

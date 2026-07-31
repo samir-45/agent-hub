@@ -295,14 +295,23 @@ export default function AdminPage() {
 
         {/* Admin Tabs */}
         <Tabs defaultValue="users" className="w-full space-y-6">
-          <TabsList className="bg-card/60 border border-border/40 p-1 rounded-2xl h-12">
-            <TabsTrigger value="users" className="rounded-xl text-xs font-semibold gap-2 data-[state=active]:gradient-primary data-[state=active]:text-black">
+          <TabsList className="bg-card/60 border border-border/40 p-1.5 rounded-2xl h-12 gap-1.5">
+            <TabsTrigger
+              value="users"
+              className="rounded-xl text-xs font-semibold gap-2 transition-all px-4 py-2 text-muted-foreground hover:text-foreground data-[state=active]:!bg-emerald-500/20 data-[state=active]:!text-emerald-400 data-[state=active]:border data-[state=active]:border-emerald-500/40 data-[state=active]:shadow-sm"
+            >
               <Users className="h-4 w-4" /> Live Clerk Directory ({usersList.length})
             </TabsTrigger>
-            <TabsTrigger value="system" className="rounded-xl text-xs font-semibold gap-2 data-[state=active]:gradient-primary data-[state=active]:text-black">
+            <TabsTrigger
+              value="system"
+              className="rounded-xl text-xs font-semibold gap-2 transition-all px-4 py-2 text-muted-foreground hover:text-foreground data-[state=active]:!bg-emerald-500/20 data-[state=active]:!text-emerald-400 data-[state=active]:border data-[state=active]:border-emerald-500/40 data-[state=active]:shadow-sm"
+            >
               <Sliders className="h-4 w-4" /> Platform & API Controls
             </TabsTrigger>
-            <TabsTrigger value="logs" className="rounded-xl text-xs font-semibold gap-2 data-[state=active]:gradient-primary data-[state=active]:text-black">
+            <TabsTrigger
+              value="logs"
+              className="rounded-xl text-xs font-semibold gap-2 transition-all px-4 py-2 text-muted-foreground hover:text-foreground data-[state=active]:!bg-emerald-500/20 data-[state=active]:!text-emerald-400 data-[state=active]:border data-[state=active]:border-emerald-500/40 data-[state=active]:shadow-sm"
+            >
               <Activity className="h-4 w-4" /> System Audit Logs
             </TabsTrigger>
           </TabsList>
