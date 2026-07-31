@@ -335,6 +335,7 @@ export default function ImageStudio() {
   const [activeImage, setActiveImage] = useState<GeneratedImage | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [lightboxRetryCount, setLightboxRetryCount] = useState(0);
   const [copiedId, setCopiedId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -974,8 +975,12 @@ export default function ImageStudio() {
                     size="sm"
                     className="rounded-xl gradient-primary text-black font-semibold border-0 text-xs gap-1.5 shadow-lg mt-2"
                     onClick={() => {
+                      setImageError(false);
+                      setImageLoaded(false);
+                      setLightboxRetryCount(0);
+                      const sanitized = sanitizePromptForImageGen(activeImage.prompt);
                       const seed = Math.floor(Math.random() * 1000000);
-                      const newUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(activeImage.prompt)}?width=${activeImage.width}&height=${activeImage.height}&seed=${seed}&model=flux&nologo=true`;
+                      const newUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(sanitized)}?width=${activeImage.width}&height=${activeImage.height}&seed=${seed}&model=flux&nologo=true`;
                       setActiveImage({ ...activeImage, url: newUrl });
                     }}
                   >
@@ -985,19 +990,48 @@ export default function ImageStudio() {
               ) : (
                 <>
                   {!imageLoaded && (
-                    <div className="w-full h-[45vh] max-w-lg flex flex-col items-center justify-center rounded-2xl bg-card/40 border border-emerald-500/20 animate-pulse p-8 shadow-inner">
-                      <div className="h-12 w-12 rounded-2xl gradient-primary flex items-center justify-center mb-3 shadow-lg glow-primary">
-                        <Loader2 className="h-6 w-6 text-black animate-spin" />
+                    <div className="w-full h-[45vh] max-w-lg flex flex-col items-center justify-center rounded-2xl bg-card/40 border border-emerald-500/30 p-8 shadow-2xl text-center space-y-4">
+                      <div className="h-14 w-14 rounded-2xl gradient-primary flex items-center justify-center shadow-lg glow-primary relative">
+                        <Loader2 className="h-7 w-7 text-black animate-spin" />
                       </div>
-                      <p className="text-xs font-mono text-emerald-400 font-semibold tracking-wide">Rendering High-Res Preview…</p>
-                      <p className="text-[10px] text-muted-foreground mt-1 font-mono">Synthesizing image buffer</p>
+                      <div>
+                        <p className="text-sm font-mono text-emerald-400 font-bold tracking-wide">
+                          {lightboxRetryCount > 0 ? 'Switching Engine to Fast FLUX…' : 'Synthesizing High-Res Canvas…'}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1 font-mono">
+                          {activeImage.model} · {activeImage.width}x{activeImage.height}
+                        </p>
+                      </div>
+                      <div className="w-full max-w-xs h-1.5 bg-muted/60 rounded-full overflow-hidden border border-border/40">
+                        <div className="h-full gradient-primary animate-pulse w-3/4 rounded-full" />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground/80 font-mono">
+                        Complex AI diffusion models may take 10–20s to compile high-resolution details
+                      </p>
                     </div>
                   )}
                   <img
                     src={activeImage.url}
                     alt={activeImage.prompt}
-                    onLoad={() => { setImageLoaded(true); setImageError(false); }}
-                    onError={() => { setImageLoaded(false); setImageError(true); }}
+                    onLoad={() => {
+                      setImageLoaded(true);
+                      setImageError(false);
+                    }}
+                    onError={() => {
+                      if (lightboxRetryCount < 2) {
+                        setLightboxRetryCount((prev) => prev + 1);
+                        setImageError(false);
+                        setImageLoaded(false);
+                        const sanitized = sanitizePromptForImageGen(activeImage.prompt);
+                        const freshSeed = Math.floor(Math.random() * 900000) + 100000;
+                        const fallbackModel = lightboxRetryCount === 0 ? 'flux' : 'turbo';
+                        const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(sanitized)}?width=${activeImage.width}&height=${activeImage.height}&seed=${freshSeed}&model=${fallbackModel}&nologo=true`;
+                        setActiveImage({ ...activeImage, url: fallbackUrl });
+                      } else {
+                        setImageLoaded(false);
+                        setImageError(true);
+                      }
+                    }}
                     className={`max-h-[52vh] max-w-full object-contain rounded-xl shadow-2xl border border-white/10 transition-opacity duration-300 ${
                       imageLoaded && !imageError ? 'opacity-100' : 'opacity-0 absolute'
                     }`}
