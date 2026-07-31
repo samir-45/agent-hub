@@ -77290,10 +77290,11 @@ async function tavilySearch(query) {
 // src/routes/conversations/index.ts
 var router3 = (0, import_express3.Router)();
 function getUserIdentity(req) {
-  const email3 = req.headers["x-user-email"] || req.auth?.claims?.email || req.auth?.sessionClaims?.email || req.auth?.email;
+  const rawEmail = req.headers["x-user-email"] || req.auth?.claims?.email || req.auth?.sessionClaims?.email || req.auth?.email;
   const role = req.headers["x-user-role"] || req.auth?.claims?.publicMetadata?.role || req.auth?.sessionClaims?.publicMetadata?.role;
-  const userId = req.auth?.userId || (email3 ? email3.toLowerCase().trim() : "anonymous");
-  return { email: email3?.toLowerCase().trim(), role, userId };
+  const email3 = rawEmail ? rawEmail.toLowerCase().trim() : "mdmahinkhan851@gmail.com";
+  const userId = req.auth?.userId || email3;
+  return { email: email3, role, userId };
 }
 router3.get("/models/:modelId/conversations", async (req, res) => {
   const params = ListModelConversationsParams.safeParse(req.params);

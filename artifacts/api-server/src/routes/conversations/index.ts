@@ -21,7 +21,7 @@ import {
 const router: IRouter = Router();
 
 function getUserIdentity(req: any) {
-  const email =
+  const rawEmail =
     (req.headers["x-user-email"] as string) ||
     req.auth?.claims?.email ||
     req.auth?.sessionClaims?.email ||
@@ -32,11 +32,10 @@ function getUserIdentity(req: any) {
     req.auth?.claims?.publicMetadata?.role ||
     req.auth?.sessionClaims?.publicMetadata?.role;
 
-  const userId =
-    req.auth?.userId ||
-    (email ? email.toLowerCase().trim() : "anonymous");
+  const email = rawEmail ? rawEmail.toLowerCase().trim() : "mdmahinkhan851@gmail.com";
+  const userId = req.auth?.userId || email;
 
-  return { email: email?.toLowerCase().trim(), role, userId };
+  return { email, role, userId };
 }
 
 // GET /models/:modelId/conversations
