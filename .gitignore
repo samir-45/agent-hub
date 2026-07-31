@@ -53,3 +53,5 @@ Thumbs.db
 .env.local
 .env.*.local
 
+# Vercel API build artifacts (sourcemaps only - keep .mjs files)
+api/*.map
