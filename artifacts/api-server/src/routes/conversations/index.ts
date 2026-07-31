@@ -207,10 +207,11 @@ router.post("/models/:modelId/conversations/:id/messages", async (req, res): Pro
     }
   }
 
+  const userEmail = (req as any).auth?.claims?.email || (req as any).auth?.sessionClaims?.email;
+  const userRole = (req as any).auth?.claims?.publicMetadata?.role || (req as any).auth?.sessionClaims?.publicMetadata?.role;
+  const userHeaderKey = req.headers["x-openrouter-key"] as string | undefined;
+
   try {
-    const userEmail = (req as any).auth?.claims?.email || (req as any).auth?.sessionClaims?.email;
-    const userRole = (req as any).auth?.claims?.publicMetadata?.role || (req as any).auth?.sessionClaims?.publicMetadata?.role;
-    const userHeaderKey = req.headers["x-openrouter-key"] as string | undefined;
     const openrouter = await getOpenRouterClient(userEmail, userHeaderKey, userRole);
 
     if (model.webSearchEnabled) {
@@ -302,7 +303,7 @@ router.post("/models/:modelId/conversations/:id/messages", async (req, res): Pro
       req.log.info("Model endpoint offline/unavailable on OpenRouter. Retrying with active fallback model (meta-llama/llama-3.3-70b-instruct:free)...");
       try {
         res.write(`data: ${JSON.stringify({ content: `> *Notice: ${model.name} is currently offline on OpenRouter. Auto-switching to active free model (Meta Llama 3.3 70B)*\n\n` })}\n\n`);
-        const openrouter = await getOpenRouterClient();
+        const openrouter = await getOpenRouterClient(userEmail, userHeaderKey, userRole);
         const fallbackStream = await openrouter.chat.completions.create({
           model: "meta-llama/llama-3.3-70b-instruct:free",
           max_tokens: model.maxTokens,

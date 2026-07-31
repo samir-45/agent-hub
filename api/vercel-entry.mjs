@@ -77209,23 +77209,27 @@ function maskApiKey(key) {
 var cachedKey = null;
 var cacheExpiry = 0;
 async function getOpenRouterApiKey(userEmail, userHeaderKey, userRole) {
-  if (userHeaderKey && userHeaderKey.startsWith("sk-or-")) {
-    return userHeaderKey;
-  }
-  const isAdmin = userEmail === "mdmahinkhan851@gmail.com" || userRole === "admin";
-  if (isAdmin && process.env.OPENROUTER_API_KEY) {
-    return process.env.OPENROUTER_API_KEY;
+  if (userHeaderKey && typeof userHeaderKey === "string" && userHeaderKey.trim().startsWith("sk-or-")) {
+    return userHeaderKey.trim();
   }
   try {
     const [row] = await db.select().from(settingsTable).where(eq(settingsTable.key, "openrouter_api_key"));
-    if (row) {
+    if (row && row.encryptedValue) {
       const key = decrypt(row.encryptedValue, row.iv, row.authTag);
-      return key;
+      if (key && key.startsWith("sk-or-")) {
+        return key;
+      }
     }
   } catch {
   }
+  const isAdmin = Boolean(
+    userEmail && userEmail.trim().toLowerCase() === "mdmahinkhan851@gmail.com" || userRole === "admin"
+  );
+  if (isAdmin && process.env.OPENROUTER_API_KEY) {
+    return process.env.OPENROUTER_API_KEY;
+  }
   throw new Error(
-    "OpenRouter API Key Required: Please pair your own OpenRouter API key (sk-or-v1-...) in the header or Settings to execute AI models."
+    "Security Policy: OpenRouter API Key Required. Non-admin users must sign in and pair their own OpenRouter API key (sk-or-v1-...) in Settings or request header."
   );
 }
 function invalidateApiKeyCache() {
@@ -77416,10 +77420,10 @@ router3.post("/models/:modelId/conversations/:id/messages", async (req, res) => 
       }
     }
   }
+  const userEmail = req.auth?.claims?.email || req.auth?.sessionClaims?.email;
+  const userRole = req.auth?.claims?.publicMetadata?.role || req.auth?.sessionClaims?.publicMetadata?.role;
+  const userHeaderKey = req.headers["x-openrouter-key"];
   try {
-    const userEmail = req.auth?.claims?.email || req.auth?.sessionClaims?.email;
-    const userRole = req.auth?.claims?.publicMetadata?.role || req.auth?.sessionClaims?.publicMetadata?.role;
-    const userHeaderKey = req.headers["x-openrouter-key"];
     const openrouter = await getOpenRouterClient(userEmail, userHeaderKey, userRole);
     if (model.webSearchEnabled) {
       const userQuery = parsed.data.content;
@@ -77498,7 +77502,7 @@ router3.post("/models/:modelId/conversations/:id/messages", async (req, res) => 
 ` })}
 
 `);
-        const openrouter = await getOpenRouterClient();
+        const openrouter = await getOpenRouterClient(userEmail, userHeaderKey, userRole);
         const fallbackStream = await openrouter.chat.completions.create({
           model: "meta-llama/llama-3.3-70b-instruct:free",
           max_tokens: model.maxTokens,

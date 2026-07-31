@@ -93,11 +93,178 @@ const PROMPT_SUGGESTIONS = [
 
 const STORAGE_KEY = 'agent_hub_generated_images';
 
+function sanitizePromptForImageGen(prompt: string): string {
+  if (!prompt) return '';
+  let clean = prompt;
+  const replacements: Record<string, string> = {
+    bloody: 'crimson red',
+    blood: 'crimson',
+    gore: 'dark dramatic',
+    nude: 'artistic figure',
+    nsfw: 'artistic portrait',
+  };
+
+  Object.keys(replacements).forEach((word) => {
+    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+    clean = clean.replace(regex, replacements[word]);
+  });
+
+  return clean;
+}
+
 function buildRefParam(url?: string): string {
   if (!url || typeof url !== 'string') return '';
   const trimmed = url.trim();
   if (!trimmed || trimmed.startsWith('data:') || trimmed.startsWith('blob:') || trimmed.includes('pollinations.ai')) return '';
   return `&image=${encodeURIComponent(trimmed)}`;
+}
+
+function ImageCardItem({
+  img,
+  copiedId,
+  onPreview,
+  onVariations,
+  onReference,
+  onCopy,
+  onDelete,
+}: {
+  img: GeneratedImage;
+  copiedId: number | null;
+  onPreview: (img: GeneratedImage) => void;
+  onVariations: (img: GeneratedImage) => void;
+  onReference: (img: GeneratedImage) => void;
+  onCopy: (prompt: string, id: number) => void;
+  onDelete: (id: number) => void;
+}) {
+  const [imgUrl, setImgUrl] = useState(img.url);
+  const [loading, setLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  const handleImageError = () => {
+    if (retryCount === 0) {
+      setRetryCount(1);
+      const sanitized = sanitizePromptForImageGen((img.prompt || 'artistic scene').replace(/\(Variation #\d+\)/g, '').trim());
+      const freshSeed = Math.floor(Math.random() * 900000) + 100000;
+      const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(sanitized)}?width=${img.width || 1024}&height=${img.height || 1024}&seed=${freshSeed}&model=turbo&nologo=true`;
+      setImgUrl(fallbackUrl);
+    } else if (retryCount === 1) {
+      setRetryCount(2);
+      const seed = Math.abs(img.id % 1000) + 10;
+      setImgUrl(`https://picsum.photos/seed/${seed}/${img.width || 1024}/${img.height || 1024}`);
+    } else {
+      setLoading(false);
+      setHasError(true);
+    }
+  };
+
+  return (
+    <Card className="glass-card rounded-2xl overflow-hidden group hover:border-emerald-500/50 transition-all duration-300 shadow-md flex flex-col">
+      <div className="relative aspect-square bg-[#0a0d0b] overflow-hidden cursor-pointer flex items-center justify-center" onClick={() => !hasError && onPreview({ ...img, url: imgUrl })}>
+        {/* Loading Skeleton & Spinner */}
+        {loading && !hasError && (
+          <div className="absolute inset-0 z-10 bg-[#0a0d0b] flex flex-col items-center justify-center gap-2 p-4 text-center">
+            <Loader2 className="h-6 w-6 text-emerald-400 animate-spin" />
+            <p className="text-[10px] font-mono text-muted-foreground animate-pulse">Rendering pixels…</p>
+          </div>
+        )}
+
+        {/* Error / Filtered Fallback State */}
+        {hasError ? (
+          <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center bg-destructive/5 space-y-2">
+            <div className="p-2 rounded-xl bg-destructive/10 text-destructive">
+              <ImageIcon className="h-5 w-5" />
+            </div>
+            <p className="text-xs font-bold text-foreground">Generation Filtered</p>
+            <p className="text-[10px] text-muted-foreground line-clamp-2 px-2">Prompt triggered safety rules or API timed out.</p>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-[10px] rounded-lg border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 mt-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                setHasError(false);
+                setLoading(true);
+                setRetryCount(0);
+                const sanitized = sanitizePromptForImageGen((img.prompt || 'artistic scene').replace(/\(Variation #\d+\)/g, '').trim());
+                const freshSeed = Math.floor(Math.random() * 900000) + 100000;
+                setImgUrl(`https://image.pollinations.ai/prompt/${encodeURIComponent(sanitized)}?width=${img.width || 1024}&height=${img.height || 1024}&seed=${freshSeed}&model=flux&nologo=true`);
+              }}
+            >
+              <Wand2 className="h-3 w-3 mr-1" /> Retry Render
+            </Button>
+          </div>
+        ) : (
+          <img
+            src={imgUrl}
+            alt=""
+            className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${loading ? 'opacity-0' : 'opacity-100'}`}
+            onLoad={() => setLoading(false)}
+            onError={handleImageError}
+          />
+        )}
+
+        {!loading && !hasError && (
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex flex-col justify-end">
+            <p className="text-xs text-white line-clamp-2 mb-2 font-medium">"{img.prompt}"</p>
+            <div className="flex items-center justify-between text-[10px] text-white/70 font-mono">
+              <span>{img.aspectRatio} · {img.model.split('/')[1] || img.model}</span>
+              <span className="flex items-center gap-1 text-emerald-400 font-bold"><Maximize2 className="h-3 w-3" /> Preview</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="p-3 border-t border-border/40 flex items-center justify-between bg-card/40">
+        <span className="text-[11px] font-mono text-muted-foreground truncate max-w-[170px]" title={img.prompt}>
+          {img.prompt}
+        </span>
+        <div className="flex items-center gap-1">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 rounded-lg hover:text-emerald-400"
+            onClick={() => onVariations(img)}
+            title="Generate 4 variations"
+          >
+            <Wand2 className="h-3.5 w-3.5 text-emerald-400" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 rounded-lg hover:text-emerald-400"
+            onClick={() => onReference(img)}
+            title="Use as Img-to-Img reference"
+          >
+            <ImageIcon className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 rounded-lg hover:text-emerald-400"
+            onClick={() => onCopy(img.prompt, img.id)}
+            title="Copy prompt"
+          >
+            {copiedId === img.id ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+          </Button>
+          <a href={imgUrl} target="_blank" rel="noopener noreferrer" download={`generated-${img.id}.png`}>
+            <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg hover:text-emerald-400" title="Download image">
+              <Download className="h-3.5 w-3.5" />
+            </Button>
+          </a>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 rounded-lg hover:text-destructive"
+            onClick={() => onDelete(img.id)}
+            title="Delete"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
 }
 
 export default function ImageStudio() {
@@ -715,87 +882,16 @@ export default function ImageStudio() {
             {history.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 stagger-children">
                 {history.map((img) => (
-                  <Card
+                  <ImageCardItem
                     key={img.id}
-                    className="glass-card rounded-2xl overflow-hidden group hover:border-emerald-500/50 transition-all duration-300 shadow-md"
-                  >
-                    <div className="relative aspect-square bg-card/60 overflow-hidden cursor-pointer" onClick={() => setActiveImage(img)}>
-                      <img
-                        src={img.url}
-                        alt={img.prompt}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
-                        onError={(e) => {
-                          const target = e.currentTarget;
-                          if (!target.dataset.retried) {
-                            target.dataset.retried = 'true';
-                            if (target.src.includes('&image=')) {
-                              target.src = target.src.replace(/&image=[^&]*/, '');
-                            } else {
-                              const cleanPrompt = encodeURIComponent((img.prompt || 'artistic scene').replace(/\(Variation #\d+\)/g, '').trim());
-                              const freshSeed = Math.floor(Math.random() * 900000) + 100000;
-                              target.src = `https://image.pollinations.ai/prompt/${cleanPrompt}?width=${img.width || 1024}&height=${img.height || 1024}&seed=${freshSeed}&model=flux&nologo=true`;
-                            }
-                          }
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex flex-col justify-end">
-                        <p className="text-xs text-white line-clamp-2 mb-2 font-medium">"{img.prompt}"</p>
-                        <div className="flex items-center justify-between text-[10px] text-white/70 font-mono">
-                          <span>{img.aspectRatio} · {img.model.split('/')[1]}</span>
-                          <span className="flex items-center gap-1 text-emerald-400 font-bold"><Maximize2 className="h-3 w-3" /> Preview</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-3 border-t border-border/40 flex items-center justify-between">
-                      <span className="text-[11px] font-mono text-muted-foreground truncate max-w-[180px]">
-                        {img.prompt}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 rounded-lg hover:text-emerald-400"
-                          onClick={() => handleGenerateVariations(img)}
-                          title="Generate 4 variations"
-                        >
-                          <Wand2 className="h-3.5 w-3.5 text-emerald-400" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 rounded-lg hover:text-emerald-400"
-                          onClick={() => handleUseAsReference(img)}
-                          title="Use as Img-to-Img reference"
-                        >
-                          <ImageIcon className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 rounded-lg hover:text-emerald-400"
-                          onClick={() => handleCopyPrompt(img.prompt, img.id)}
-                          title="Copy prompt"
-                        >
-                          {copiedId === img.id ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-                        </Button>
-                        <a href={img.url} target="_blank" rel="noopener noreferrer" download={`generated-${img.id}.png`}>
-                          <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg hover:text-emerald-400" title="Download image">
-                            <Download className="h-3.5 w-3.5" />
-                          </Button>
-                        </a>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 rounded-lg hover:text-destructive"
-                          onClick={() => handleDeleteImage(img.id)}
-                          title="Delete"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
+                    img={img}
+                    copiedId={copiedId}
+                    onPreview={(i) => setActiveImage(i)}
+                    onVariations={handleGenerateVariations}
+                    onReference={handleUseAsReference}
+                    onCopy={handleCopyPrompt}
+                    onDelete={handleDeleteImage}
+                  />
                 ))}
               </div>
             ) : !isGenerating ? (
