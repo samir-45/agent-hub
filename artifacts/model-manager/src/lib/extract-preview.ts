@@ -36,22 +36,20 @@ export function extractPreview(content: string): string | null {
   if (blocks.length === 0) return null;
 
   const htmlBlock = blocks.find(b => b.lang === 'html');
-  const cssBlock = blocks.find(b => b.lang === 'css');
-  const jsBlock = blocks.find(b => ['javascript', 'js'].includes(b.lang));
-  const jsxBlock = blocks.find(b => ['jsx', 'tsx'].includes(b.lang));
+  const cssBlocks = blocks.filter(b => b.lang === 'css').map(b => b.code).join('\n\n');
+  const jsBlocks = blocks.filter(b => ['javascript', 'js'].includes(b.lang)).map(b => b.code).join('\n\n');
+  const jsxBlocks = blocks.filter(b => ['jsx', 'tsx'].includes(b.lang)).map(b => b.code).join('\n\n');
 
   if (htmlBlock) {
     const trimmed = htmlBlock.code.trim();
-    // Full HTML document — inject any separate CSS/JS blocks if not already present
     if (trimmed.startsWith('<!') || trimmed.toLowerCase().startsWith('<html')) {
       let html = htmlBlock.code;
-      if (cssBlock && !html.includes('<style')) {
-        html = html.replace('</head>', `<style>\n${cssBlock.code}\n</style>\n</head>`);
+      if (cssBlocks && !html.includes('<style')) {
+        html = html.replace('</head>', `<style>\n${cssBlocks}\n</style>\n</head>`);
       }
-      if (jsBlock && !html.includes('<script')) {
-        html = html.replace('</body>', `<script>\n${jsBlock.code}\n</script>\n</body>`);
+      if (jsBlocks && !html.includes('<script')) {
+        html = html.replace('</body>', `<script>\n${jsBlocks}\n</script>\n</body>`);
       }
-      // Inject navigation guard before </body>
       if (html.includes('</body>')) {
         html = html.replace('</body>', `${NAVIGATION_GUARD}\n</body>`);
       } else {
@@ -59,16 +57,15 @@ export function extractPreview(content: string): string | null {
       }
       return html;
     }
-    // Partial HTML snippet — wrap in a full document
-    return wrapHtml(htmlBlock.code, cssBlock?.code, jsBlock?.code);
+    return wrapHtml(htmlBlock.code, cssBlocks, jsBlocks);
   }
 
-  if (jsxBlock) {
-    return buildReactPreview(jsxBlock.code);
+  if (jsxBlocks) {
+    return buildReactPreview(jsxBlocks, cssBlocks);
   }
 
-  if (cssBlock || jsBlock) {
-    return wrapHtml('', cssBlock?.code, jsBlock?.code);
+  if (cssBlocks || jsBlocks) {
+    return wrapHtml('', cssBlocks, jsBlocks);
   }
 
   return null;
@@ -94,12 +91,14 @@ ${NAVIGATION_GUARD}
 </html>`;
 }
 
-function buildReactPreview(code: string): string {
+function buildReactPreview(code: string, cssCode?: string): string {
   // Extract icon imports before stripping
   const iconImports: string[] = [];
-  const lucideMatch = code.match(/import\s+\{([^}]+)\}\s+from\s+['"]lucide-react['"]/);
-  if (lucideMatch && lucideMatch[1]) {
-    iconImports.push(...lucideMatch[1].split(',').map(s => s.trim()).filter(Boolean));
+  const lucideMatches = Array.from(code.matchAll(/import\s+\{([^}]+)\}\s+from\s+['"]lucide-react['"]/g));
+  for (const m of lucideMatches) {
+    if (m[1]) {
+      iconImports.push(...m[1].split(',').map(s => s.trim()).filter(Boolean));
+    }
   }
 
   // Clean code — strip module imports/exports & directives
@@ -122,13 +121,14 @@ function buildReactPreview(code: string): string {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script src="https://cdn.tailwindcss.com"></script>
-<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script crossorigin="anonymous" src="https://cdn.tailwindcss.com"></script>
+<script crossorigin="anonymous" src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script crossorigin="anonymous" src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script crossorigin="anonymous" src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; }
   body { margin: 0; padding: 1rem; font-family: system-ui, -apple-system, sans-serif; background-color: #0d1117; color: #c9d1d9; }
+  ${cssCode ?? ''}
 </style>
 </head>
 <body>
@@ -146,7 +146,12 @@ window.onerror = function(msg, url, lineNo, columnNo, error) {
 };
 </script>
 
-<script type="text/babel">
+<script type="text/babel" data-presets="react,typescript">
+// CSS Modules proxy polyfill for component styles references (styles.header -> "header")
+const styles = new Proxy({}, {
+  get: (target, prop) => typeof prop === 'string' ? prop : ''
+});
+
 // De-structure standard React hooks into local scope
 const {
   useState,
@@ -189,7 +194,7 @@ ${iconDeclarations}
 ${cleaned}
 
 // Auto-detect root component
-const __candidates = ['Calculator', 'Calendar', 'App', '__DefaultExport', 'Component', 'Main', 'Page', 'Dashboard'];
+const __candidates = ['Home', 'Calculator', 'Calendar', 'App', '__DefaultExport', 'Component', 'Main', 'Page', 'Dashboard'];
 let __Root = null;
 
 for (const __name of __candidates) {
