@@ -345,6 +345,7 @@ export default function ModelDetail() {
       if (preview) {
         setPreviewHtml(preview);
         setShowPreview(true);
+        setSidebarOpen(false);
       }
     }
   }, []);
@@ -358,12 +359,77 @@ export default function ModelDetail() {
 
   if (modelLoading) {
     return (
-      <div className="min-h-[100dvh] bg-background p-6 noise-bg">
-        <Skeleton className="h-8 w-48 mb-4 rounded-xl" />
-        <Skeleton className="h-4 w-72 mb-8 rounded-xl" />
-        <div className="grid grid-cols-3 gap-6">
-          <Skeleton className="h-64 col-span-1 rounded-2xl" />
-          <Skeleton className="h-64 col-span-2 rounded-2xl" />
+      <div className="h-screen max-h-screen overflow-hidden bg-background flex flex-col noise-bg select-none">
+        {/* Gradient accent strip */}
+        <div className="h-[2px] w-full gradient-primary shrink-0 opacity-60 animate-pulse" />
+
+        {/* Top Header Skeleton */}
+        <div className="border-b border-border/50 bg-card/50 backdrop-blur-xl shrink-0 px-5 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-8 w-8 rounded-xl bg-emerald-500/10" />
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-5 w-40 rounded-lg bg-emerald-500/15" />
+                  <Skeleton className="h-4 w-14 rounded-full bg-emerald-500/20" />
+                </div>
+                <Skeleton className="h-3 w-28 rounded-md bg-muted/60" />
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-8 w-36 rounded-xl bg-muted/60" />
+              <Skeleton className="h-8 w-8 rounded-xl bg-muted/60" />
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Body Skeleton */}
+        <div className="flex-1 w-full px-5 py-4 flex gap-5 min-h-0 overflow-hidden">
+          {/* Left Sidebar Skeleton */}
+          <aside className="w-64 shrink-0 flex flex-col gap-3 h-full overflow-hidden glass-card rounded-2xl p-3">
+            <div className="flex items-center justify-between px-1 pt-1">
+              <Skeleton className="h-3 w-24 rounded-md bg-muted/60" />
+            </div>
+            <Skeleton className="h-9 w-full rounded-xl bg-emerald-500/15" />
+            <div className="space-y-2.5 pt-1">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-border/30 bg-card/40">
+                  <Skeleton className="h-3.5 w-3.5 rounded-full bg-emerald-500/20 shrink-0" />
+                  <Skeleton className={`h-3.5 rounded-md bg-muted/60 ${i % 2 === 0 ? 'w-32' : 'w-24'}`} />
+                </div>
+              ))}
+            </div>
+          </aside>
+
+          {/* Middle Chat Skeleton */}
+          <div className="flex-1 h-full flex flex-col justify-between min-h-0 overflow-hidden glass-card rounded-2xl p-4">
+            <div className="space-y-5 flex-1 pr-2">
+              {/* User Bubble Skeleton */}
+              <div className="flex flex-row-reverse gap-3">
+                <Skeleton className="h-7 w-7 rounded-xl bg-emerald-500/20 shrink-0" />
+                <Skeleton className="h-10 w-64 rounded-2xl bg-emerald-500/15" />
+              </div>
+
+              {/* Assistant Message Skeleton */}
+              <div className="flex gap-3">
+                <Skeleton className="h-7 w-7 rounded-xl bg-muted/80 shrink-0" />
+                <div className="flex-1 max-w-[85%] space-y-2.5 p-4 rounded-2xl border border-border/40 bg-card/60">
+                  <Skeleton className="h-4 w-3/4 rounded-md bg-muted/70" />
+                  <Skeleton className="h-4 w-1/2 rounded-md bg-muted/60" />
+                  <Skeleton className="h-28 w-full rounded-xl bg-black/60 border border-emerald-950/60" />
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Prompt Bar Skeleton */}
+            <div className="shrink-0 pt-3 border-t border-border/30 mt-3">
+              <div className="flex gap-2 items-center glass-card rounded-2xl p-2 h-12">
+                <Skeleton className="h-4 flex-1 rounded-md bg-muted/40 ml-2" />
+                <Skeleton className="h-8 w-8 rounded-xl bg-emerald-500/20 shrink-0" />
+                <Skeleton className="h-8 w-8 rounded-xl bg-emerald-500/30 shrink-0" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -552,7 +618,7 @@ export default function ModelDetail() {
                             className={`rounded-2xl px-4 py-3 text-sm ${
                               msg.role === 'user'
                                 ? 'max-w-[80%] gradient-primary text-black font-medium shadow-lg shadow-emerald-500/10'
-                                : 'max-w-full bg-card/60 text-foreground border border-border/40'
+                                : 'max-w-full min-w-0 overflow-hidden bg-card/60 text-foreground border border-border/40'
                             }`}
                           >
                             {msg.role === 'user' ? (
@@ -622,7 +688,13 @@ export default function ModelDetail() {
                         data-testid="input-message"
                       />
                       <Button
-                        onClick={() => setShowPreview((p) => !p)}
+                        onClick={() => {
+                          setShowPreview((p) => {
+                            const next = !p;
+                            if (next) setSidebarOpen(false);
+                            return next;
+                          });
+                        }}
                         size="icon"
                         variant={showPreview ? 'default' : 'ghost'}
                         title={showPreview ? 'Hide preview' : 'Show preview'}

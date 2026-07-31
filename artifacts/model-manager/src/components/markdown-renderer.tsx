@@ -49,7 +49,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({ content, stream
   let renderBlockCounter = 0;
 
   return (
-    <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1.5 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-0 prose-code:before:content-none prose-code:after:content-none">
+    <div className="prose prose-sm dark:prose-invert max-w-none w-full min-w-0 overflow-hidden prose-p:my-1.5 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-0 prose-code:before:content-none prose-code:after:content-none">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{

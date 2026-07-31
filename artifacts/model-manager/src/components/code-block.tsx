@@ -135,15 +135,15 @@ export const CodeBlock = memo(function CodeBlock({ language, code, fullMessageCo
     : code;
 
   return (
-    <div className="group relative rounded-xl border border-emerald-950/60 overflow-hidden my-3 shadow-md bg-[#070908] transition-all hover:border-emerald-800/40">
+    <div className="group relative rounded-xl border border-emerald-950/60 overflow-hidden my-3 shadow-md bg-[#070908] transition-all hover:border-emerald-800/40 w-full min-w-0 max-w-full">
       {/* Header bar */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#050706] border-b border-emerald-950/60 select-none">
-        <div className="flex items-center gap-2">
-          <FileCode2 className="h-3.5 w-3.5 text-emerald-400" />
-          <span className="text-[11px] font-mono font-semibold text-emerald-400/90 uppercase tracking-wider">
+      <div className="flex flex-wrap items-center justify-between gap-1.5 px-3 py-1.5 bg-[#050706] border-b border-emerald-950/60 select-none min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <FileCode2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+          <span className="text-[11px] font-mono font-semibold text-emerald-400/90 uppercase tracking-wider truncate">
             {LANG_LABELS[lang] || lang || 'Code'}
           </span>
-          <span className="text-[10px] text-muted-foreground/60 font-mono">
+          <span className="text-[10px] text-muted-foreground/60 font-mono shrink-0">
             {lineCount} line{lineCount !== 1 ? 's' : ''}
           </span>
         </div>
