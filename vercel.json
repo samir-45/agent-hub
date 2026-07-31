@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "buildCommand": "pnpm --filter @workspace/model-manager run build && node -e \"require('fs').cpSync('artifacts/model-manager/dist', 'public', {recursive: true})\"",
+  "buildCommand": "pnpm --filter @workspace/model-manager run build && mkdir -p public && cp -r artifacts/model-manager/dist/. public/",
   "outputDirectory": "public",
   "functions": {
     "api/index.ts": {
