@@ -1,11 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "buildCommand": "pnpm run build",
+  "buildCommand": "pnpm --filter @workspace/model-manager run build && node -e \"require('fs').cpSync('artifacts/model-manager/dist', 'public', {recursive: true})\"",
   "outputDirectory": "public",
   "functions": {
     "api/index.ts": {
-      "runtime": "nodejs20.x"
+      "maxDuration": 30
     }
   },
   "rewrites": [
