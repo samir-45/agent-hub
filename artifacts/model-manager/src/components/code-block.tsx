@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 interface CodeBlockProps {
   language: string;
   code: string;
+  fullMessageContent?: string;
+  isPrimaryEntry?: boolean;
   onOpenPreview?: (code: string, lang: string) => void;
 }
 
@@ -97,7 +99,7 @@ const customTheme = {
   },
 };
 
-export function CodeBlock({ language, code, onOpenPreview }: CodeBlockProps) {
+export function CodeBlock({ language, code, fullMessageContent, isPrimaryEntry, onOpenPreview }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
   const [wrapLines, setWrapLines] = useState(true);
@@ -169,17 +171,17 @@ export function CodeBlock({ language, code, onOpenPreview }: CodeBlockProps) {
             <Download className="h-3 w-3" />
           </Button>
 
-          {/* Live Preview Button */}
-          {isPreviewable && onOpenPreview && (
+          {/* Live Preview Button — only show on primary entry point block */}
+          {isPreviewable && onOpenPreview && isPrimaryEntry && (
             <Button
               size="sm"
               variant="outline"
-              className="h-6 px-2 text-[11px] font-medium border-emerald-800/60 text-emerald-400 bg-emerald-950/40 hover:bg-emerald-900/60 transition-colors gap-1"
-              onClick={() => onOpenPreview(code, lang)}
-              title="Open Live Preview Sandbox"
+              className="h-6 px-2.5 text-[11px] font-semibold border-emerald-700/80 text-emerald-300 bg-emerald-950/80 hover:bg-emerald-900 transition-colors gap-1.5 shadow-sm"
+              onClick={() => onOpenPreview(fullMessageContent || code, lang)}
+              title="Run Project Live Preview"
             >
-              <Play className="h-3 w-3 fill-emerald-400" />
-              Live Preview
+              <Play className="h-3 w-3 fill-emerald-400 text-emerald-400" />
+              Run Project Live
             </Button>
           )}
 

@@ -38,7 +38,11 @@ export function extractPreview(content: string): string | null {
   const htmlBlock = blocks.find(b => b.lang === 'html');
   const cssBlocks = blocks.filter(b => b.lang === 'css').map(b => b.code).join('\n\n');
   const jsBlocks = blocks.filter(b => ['javascript', 'js'].includes(b.lang)).map(b => b.code).join('\n\n');
-  const jsxBlocks = blocks.filter(b => ['jsx', 'tsx'].includes(b.lang)).map(b => b.code).join('\n\n');
+  
+  // Filter out incomplete/pseudo-code variant blocks if main blocks exist
+  const allJsx = blocks.filter(b => ['jsx', 'tsx'].includes(b.lang));
+  const validJsx = allJsx.filter(b => !/^\/\/\s*\.\.\.\s*same/m.test(b.code.trim()));
+  const jsxBlocks = (validJsx.length > 0 ? validJsx : allJsx).map(b => b.code).join('\n\n');
 
   if (htmlBlock) {
     const trimmed = htmlBlock.code.trim();
@@ -99,18 +103,19 @@ function buildReactPreview(code: string, cssCode?: string): string {
     if (m[1]) {
       iconImports.push(...m[1].split(',').map(s => s.trim()).filter(Boolean));
     }
-  }
-
-  // Clean code — strip module imports/exports & directives
+  }  // Clean code — strip module imports/exports, directives, TS hook generics & invalid pseudo-code tokens
   const cleaned = code
     .replace(/^\s*['"]use client['"];?\s*$/gm, '')
     .replace(/^\s*['"]use server['"];?\s*$/gm, '')
     .replace(/^import\s+[\s\S]*?from\s+['"].*?['"];?\s*$/gm, '')
-    .replace(/^export\s+default\s+function\s+([A-Za-z0-9_]+)/m, 'function $1')
-    .replace(/^export\s+default\s+class\s+([A-Za-z0-9_]+)/m, 'class $1')
-    .replace(/^export\s+default\s+/m, 'const __DefaultExport = ')
+    .replace(/use(State|Ref|Memo|Callback|Context|Reducer)\s*<[^>]+>\s*\(/g, 'use$1(') // strip TS hook generics e.g. useState<Date | null>(null) -> useState(null)
+    .replace(/^default\s+function\s+/gm, 'function ')
+    .replace(/^export\s+default\s+function\s+([A-Za-z0-9_]+)/gm, 'function $1')
+    .replace(/^export\s+default\s+class\s+([A-Za-z0-9_]+)/gm, 'class $1')
+    .replace(/^export\s+default\s+/gm, 'const __DefaultExport = ')
     .replace(/^export\s+\{[^}]*\}\s*;?\s*$/gm, '')
-    .replace(/^export\s+/gm, '');
+    .replace(/^export\s+/gm, '')
+    .replace(/\/\/\s*\.\.\..*$/gm, '');
 
   // Detect function/class/const names in user code so icon stubs don't clash with user components
   const declaredIdentifiers = new Set<string>();
@@ -201,6 +206,28 @@ ${iconDeclarations}
 // Injected component code
 ${cleaned}
 
+// React Error Boundary for live component preview
+class PreviewErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '1.25rem', background: '#180b0b', color: '#f87171', border: '1px solid #7f1d1d', borderRadius: '0.75rem', fontFamily: 'sans-serif' }}>
+          <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>Component Render Error</h4>
+          <p style={{ margin: 0, fontSize: '13px' }}>{this.state.error?.message || 'An error occurred while rendering.'}</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // Auto-detect root component
 const __candidates = ['Home', 'Calculator', 'Calendar', 'App', '__DefaultExport', 'Component', 'Main', 'Page', 'Dashboard'];
 let __Root = null;
@@ -222,7 +249,9 @@ if (!__Root) {
 
 if (__Root) {
   try {
-    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(__Root));
+    ReactDOM.createRoot(document.getElementById('root')).render(
+      React.createElement(PreviewErrorBoundary, null, React.createElement(__Root))
+    );
   } catch (renderErr) {
     const errDiv = document.getElementById('error-display');
     if (errDiv) {

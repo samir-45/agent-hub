@@ -11,12 +11,49 @@ interface MarkdownRendererProps {
 }
 
 export function MarkdownRenderer({ content, streaming, onOpenPreview }: MarkdownRendererProps) {
+  // Parse code blocks in content to determine the primary entry point block
+  const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+  const blocks: { index: number; lang: string; code: string }[] = [];
+  let match;
+  let bIdx = 0;
+  while ((match = codeBlockRegex.exec(content)) !== null) {
+    blocks.push({
+      index: bIdx++,
+      lang: (match[1] ?? '').toLowerCase().trim(),
+      code: match[2] ?? '',
+    });
+  }
+
+  let primaryIndex = -1;
+  const previewable = blocks.filter(b => ['html', 'jsx', 'tsx', 'js', 'javascript'].includes(b.lang));
+
+  if (previewable.length > 0) {
+    const htmlEntry = previewable.find(b => b.lang === 'html');
+    if (htmlEntry) {
+      primaryIndex = htmlEntry.index;
+    } else {
+      const pageEntry = previewable.find(b =>
+        /export\s+default\s+function\s+(Home|Page|App|Calculator|Dashboard|Main)/i.test(b.code) ||
+        b.code.includes('app/page') ||
+        b.code.includes('pages/index')
+      );
+      if (pageEntry) {
+        primaryIndex = pageEntry.index;
+      } else {
+        const lastJsx = [...previewable].reverse().find(b => ['jsx', 'tsx'].includes(b.lang));
+        primaryIndex = lastJsx ? lastJsx.index : previewable[previewable.length - 1].index;
+      }
+    }
+  }
+
+  let renderBlockCounter = 0;
+
   return (
     <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1.5 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-0 prose-code:before:content-none prose-code:after:content-none">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          // Code blocks → premium CodeBlock component
+          // Code blocks → intelligent CodeBlock component
           code({ className, children, ...props }: ComponentPropsWithoutRef<'code'> & { node?: unknown }) {
             const match = /language-(\w+)/.exec(className || '');
             const codeStr = String(children).replace(/\n$/, '');
@@ -33,11 +70,16 @@ export function MarkdownRenderer({ content, streaming, onOpenPreview }: Markdown
               );
             }
 
+            const currentIdx = renderBlockCounter++;
+            const isPrimary = currentIdx === primaryIndex;
+
             // Fenced code block
             return (
               <CodeBlock
                 language={match[1]}
                 code={codeStr}
+                fullMessageContent={content}
+                isPrimaryEntry={isPrimary}
                 onOpenPreview={onOpenPreview}
               />
             );
