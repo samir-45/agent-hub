@@ -226,9 +226,14 @@ export default function ModelDetail() {
 
     try {
       const url = getSendModelMessageUrl(modelId, activeConvId);
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const localKey = typeof window !== 'undefined' ? localStorage.getItem('openrouter_user_api_key') : null;
+      if (localKey) {
+        headers['x-openrouter-key'] = localKey;
+      }
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ content: userContent }),
       });
 

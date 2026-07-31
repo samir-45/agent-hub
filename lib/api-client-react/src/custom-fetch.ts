@@ -358,6 +358,14 @@ export async function customFetch<T = unknown>(
     }
   }
 
+  // Attach x-openrouter-key header from localStorage if available in browser
+  if (typeof window !== "undefined" && window.localStorage && !headers.has("x-openrouter-key")) {
+    const localKey = window.localStorage.getItem("openrouter_user_api_key");
+    if (localKey) {
+      headers.set("x-openrouter-key", localKey);
+    }
+  }
+
   const requestInfo = { method, url: resolveUrl(input) };
 
   const response = await fetch(input, { ...init, method, headers });

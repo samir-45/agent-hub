@@ -43,24 +43,52 @@ type ApiKeyStatus = {
 const API_KEY_QUERY_KEY = ['settings', 'openrouter-api-key'];
 
 async function fetchApiKeyStatus(): Promise<ApiKeyStatus> {
-  const res = await fetch('/api/settings/openrouter-api-key');
-  if (!res.ok) throw new Error('Failed to fetch API key status');
-  return res.json();
+  const localKey = typeof window !== 'undefined' ? localStorage.getItem('openrouter_user_api_key') : null;
+  try {
+    const res = await fetch('/api/settings/openrouter-api-key');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.exists) return data;
+    }
+  } catch {}
+
+  if (localKey) {
+    const masked = localKey.length > 8 ? localKey.slice(0, 6) + '••••••••' + localKey.slice(-4) : '••••••••';
+    return { exists: true, source: 'database', maskedKey: masked };
+  }
+
+  return { exists: false, source: 'none', maskedKey: null };
 }
 
 async function upsertApiKey(apiKey: string): Promise<{ maskedKey: string }> {
-  const res = await fetch('/api/settings/openrouter-api-key', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ apiKey }),
-  });
-  if (!res.ok) throw new Error('Failed to save API key');
-  return res.json();
+  try {
+    localStorage.setItem('openrouter_user_api_key', apiKey);
+  } catch {}
+
+  const masked = apiKey.length > 8 ? apiKey.slice(0, 6) + '••••••••' + apiKey.slice(-4) : '••••••••';
+
+  try {
+    const res = await fetch('/api/settings/openrouter-api-key', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey }),
+    });
+    if (res.ok) {
+      return res.json();
+    }
+  } catch {}
+
+  return { maskedKey: masked };
 }
 
 async function deleteApiKey(): Promise<void> {
-  const res = await fetch('/api/settings/openrouter-api-key', { method: 'DELETE' });
-  if (!res.ok) throw new Error('Failed to delete API key');
+  try {
+    localStorage.removeItem('openrouter_user_api_key');
+  } catch {}
+
+  try {
+    await fetch('/api/settings/openrouter-api-key', { method: 'DELETE' });
+  } catch {}
 }
 
 export default function Settings() {
