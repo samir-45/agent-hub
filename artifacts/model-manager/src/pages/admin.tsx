@@ -47,44 +47,95 @@ export default function AdminPage() {
     totalUsers: 1,
     activeUsers24h: 1,
     totalModels: 0,
-    totalPlatformTokens: 142850,
-    databaseLatency: '28 ms',
+    totalPlatformTokens: 0,
+    databaseLatency: '18 ms',
   });
 
   const [publicRegEnabled, setPublicRegEnabled] = useState(true);
   const [webSearchEnabled, setWebSearchEnabled] = useState(true);
   const [rateLimitEnabled, setRateLimitEnabled] = useState(true);
 
-  const isAdmin = user?.primaryEmailAddress?.emailAddress === 'mdmahinkhan851@gmail.com' || user?.publicMetadata?.role === 'admin';
+  const userEmail = user?.primaryEmailAddress?.emailAddress;
+  const isAdmin = userEmail === 'mdmahinkhan851@gmail.com' || user?.publicMetadata?.role === 'admin';
 
   const fetchAdminData = async () => {
     setLoading(true);
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (userEmail) {
+      headers['x-user-email'] = userEmail;
+    }
+
     try {
       const [usersRes, statsRes] = await Promise.all([
-        fetch('/api/admin/users'),
-        fetch('/api/admin/stats'),
+        fetch('/api/admin/users', { headers }),
+        fetch('/api/admin/stats', { headers }),
       ]);
 
       if (usersRes.ok) {
         const data = await usersRes.json();
-        setUsersList(data.users || []);
+        const loadedUsers = data.users || [];
+        if (loadedUsers.length > 0) {
+          setUsersList(loadedUsers);
+        } else if (user) {
+          // Fallback to active signed-in admin user
+          setUsersList([
+            {
+              id: user.id || 'user_admin_current',
+              email: userEmail || 'mdmahinkhan851@gmail.com',
+              name: user.fullName || user.firstName || 'Mahin Khan',
+              role: 'admin',
+              joinedAt: new Date().toISOString().split('T')[0],
+              totalTokens: stats.totalPlatformTokens,
+              status: 'active',
+              avatar: user.imageUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces',
+            },
+          ]);
+        }
+      } else if (user) {
+        setUsersList([
+          {
+            id: user.id || 'user_admin_current',
+            email: userEmail || 'mdmahinkhan851@gmail.com',
+            name: user.fullName || user.firstName || 'Mahin Khan',
+            role: 'admin',
+            joinedAt: new Date().toISOString().split('T')[0],
+            totalTokens: stats.totalPlatformTokens,
+            status: 'active',
+            avatar: user.imageUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces',
+          },
+        ]);
       }
+
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setStats(statsData);
       }
     } catch (e) {
       console.error('Failed to load admin data:', e);
+      if (user) {
+        setUsersList([
+          {
+            id: user.id || 'user_admin_current',
+            email: userEmail || 'mdmahinkhan851@gmail.com',
+            name: user.fullName || user.firstName || 'Mahin Khan',
+            role: 'admin',
+            joinedAt: new Date().toISOString().split('T')[0],
+            totalTokens: 0,
+            status: 'active',
+            avatar: user.imageUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces',
+          },
+        ]);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (isAdmin) {
-      fetchAdminData();
-    }
-  }, [isAdmin]);
+    fetchAdminData();
+  }, [userEmail, isAdmin]);
 
   const filteredUsers = usersList.filter(
     (u) =>
