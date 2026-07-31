@@ -589,7 +589,7 @@ export default function ModelDetail() {
                 <ResizablePanelGroup direction="horizontal" className="h-full w-full flex-1 min-h-0 min-w-0">
                   <ResizablePanel id="chat" order={1} defaultSize={showPreview ? 45 : 100} minSize={25} className="min-w-0">
                     <div className="flex flex-col h-full justify-between min-h-0 min-w-0 overflow-hidden">
-                  <ScrollArea ref={scrollAreaRef} className="flex-1 min-h-0 pr-4">
+                  <ScrollArea ref={scrollAreaRef} className="flex-1 min-h-0 min-w-0 w-full overflow-hidden pr-2">
                     {messages.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full min-h-[250px] w-full text-muted-foreground my-auto animate-fade-in">
                         <div className="h-14 w-14 rounded-2xl gradient-primary flex items-center justify-center mb-4 shadow-lg glow-primary">
@@ -599,11 +599,11 @@ export default function ModelDetail() {
                         <p className="text-xs text-muted-foreground">Send a message to begin chatting</p>
                       </div>
                     ) : (
-                      <div className="space-y-5 pb-4">
+                      <div className="space-y-5 pb-4 min-w-0 w-full overflow-hidden">
                       {messages.map((msg, i) => (
                         <div
                           key={i}
-                          className={`flex gap-3 animate-slide-up ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                          className={`flex gap-3 animate-slide-up min-w-0 w-full overflow-hidden ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                         >
                           <div
                             className={`shrink-0 h-7 w-7 rounded-xl flex items-center justify-center text-xs shadow-sm ${
@@ -617,8 +617,8 @@ export default function ModelDetail() {
                           <div
                             className={`rounded-2xl px-4 py-3 text-sm ${
                               msg.role === 'user'
-                                ? 'max-w-[80%] gradient-primary text-black font-medium shadow-lg shadow-emerald-500/10'
-                                : 'max-w-full min-w-0 overflow-hidden bg-card/60 text-foreground border border-border/40'
+                                ? 'max-w-[85%] gradient-primary text-black font-medium shadow-lg shadow-emerald-500/10'
+                                : 'flex-1 min-w-0 max-w-full overflow-hidden bg-card/60 text-foreground border border-border/40'
                             }`}
                           >
                             {msg.role === 'user' ? (
