@@ -10,6 +10,16 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { UserButton, SignedIn, useUser } from '@clerk/clerk-react';
 
 const BEST_FREE_MODELS_CLIENT = [
@@ -51,42 +61,97 @@ const CATEGORY_LABELS: Record<ModelCategory, { label: string; icon: string }> = 
   vision: { label: 'Multimodal', icon: '👁️' },
 };
 
-function AnalyticsChartsGrid() {
+function AnalyticsChartsGrid({
+  models = [],
+  stats,
+}: {
+  models?: any[];
+  stats?: { totalModels?: number; enabledModels?: number; totalConversations?: number; totalMessages?: number };
+}) {
   const [reportModalOpen, setReportModalOpen] = useState(false);
+
+  // Compute category counts
+  const categoryCounts = useMemo(() => {
+    const counts = { reasoning: 0, coding: 0, fast: 0, vision: 0 };
+    if (Array.isArray(models)) {
+      models.forEach((m) => {
+        const cat = getModelCategory(m);
+        if (cat in counts) {
+          counts[cat as keyof typeof counts]++;
+        }
+      });
+    }
+    return counts;
+  }, [models]);
+
+  const totalModelsCount = models.length || stats?.totalModels || 0;
+  const activeModelsCount = stats?.enabledModels ?? models.filter((m) => m.enabled).length;
+  const totalConvos = stats?.totalConversations || 0;
+  const totalMsgs = stats?.totalMessages || 0;
+
+  const totalMaxTokens = useMemo(() => {
+    if (!Array.isArray(models) || models.length === 0) return 128000;
+    return models.reduce((acc, m) => acc + (m.maxTokens || 4096), 0);
+  }, [models]);
+
+  const estimatedProcessedTokens = (totalMsgs * 480) + (totalConvos * 120);
+  const costSavings = ((estimatedProcessedTokens * 0.000003) + totalModelsCount * 14.50).toFixed(2);
+
+  // Calculate radar chart points dynamically based on category proportions
+  const radarPoints = useMemo(() => {
+    const maxVal = Math.max(totalModelsCount, 1);
+    const rScale = (val: number) => Math.min(80, Math.max(25, (val / maxVal) * 75 + 25));
+
+    const r1 = rScale(categoryCounts.reasoning);
+    const r2 = rScale(categoryCounts.coding);
+    const r3 = rScale(categoryCounts.fast);
+    const r4 = rScale(categoryCounts.vision);
+    const r5 = rScale(activeModelsCount);
+    const r6 = rScale(totalModelsCount);
+
+    const angle = (deg: number) => (deg * Math.PI) / 180;
+    const cx = 100, cy = 100;
+
+    const p1 = `${cx + r1 * Math.sin(angle(0))},${cy - r1 * Math.cos(angle(0))}`;
+    const p2 = `${cx + r2 * Math.sin(angle(60))},${cy - r2 * Math.cos(angle(60))}`;
+    const p3 = `${cx + r3 * Math.sin(angle(120))},${cy - r3 * Math.cos(angle(120))}`;
+    const p4 = `${cx + r4 * Math.sin(angle(180))},${cy - r4 * Math.cos(angle(180))}`;
+    const p5 = `${cx + r5 * Math.sin(angle(240))},${cy - r5 * Math.cos(angle(240))}`;
+    const p6 = `${cx + r6 * Math.sin(angle(300))},${cy - r6 * Math.cos(angle(300))}`;
+
+    return `${p1} ${p2} ${p3} ${p4} ${p5} ${p6}`;
+  }, [categoryCounts, totalModelsCount, activeModelsCount]);
 
   return (
     <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-8 stagger-children">
-        {/* 1. Contribution / Token History Card */}
+        {/* 1. Contribution / Model Activity Card */}
         <Card className="glass-card rounded-2xl p-5 border border-border/50 bg-[#0d110e]/90 flex flex-col justify-between shadow-lg relative overflow-hidden">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <h3 className="text-sm font-bold text-foreground">Contribution History</h3>
-              <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-[10px] font-mono px-2 py-0.5">Token Activity</Badge>
+              <h3 className="text-sm font-bold text-foreground">Model Distribution</h3>
+              <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-[10px] font-mono px-2 py-0.5">Category Breakdown</Badge>
             </div>
-            <p className="text-xs text-muted-foreground mb-4">Last 6 months of token activity</p>
+            <p className="text-xs text-muted-foreground mb-4">Active capacity across model types</p>
 
-            {/* Bar Chart Bars */}
+            {/* Category Bar Chart */}
             <div className="flex items-end justify-between h-36 gap-2 px-1 mb-4 border-b border-border/30 pb-2.5">
               {[
-                { label: 'Dec', height: '65%', active: false },
-                { label: 'Jan', height: '90%', active: false },
-                { label: 'Feb', height: '75%', active: false },
-                { label: 'Mar', height: '95%', active: true },
-                { label: 'Apr', height: '60%', active: false },
+                { label: 'Reasoning', count: categoryCounts.reasoning, height: `${Math.min(100, Math.max(25, (categoryCounts.reasoning / Math.max(totalModelsCount, 1)) * 100))}%` },
+                { label: 'Coding', count: categoryCounts.coding, height: `${Math.min(100, Math.max(25, (categoryCounts.coding / Math.max(totalModelsCount, 1)) * 100))}%` },
+                { label: 'Fast', count: categoryCounts.fast, height: `${Math.min(100, Math.max(25, (categoryCounts.fast / Math.max(totalModelsCount, 1)) * 100))}%` },
+                { label: 'Vision', count: categoryCounts.vision, height: `${Math.min(100, Math.max(25, (categoryCounts.vision / Math.max(totalModelsCount, 1)) * 100))}%` },
               ].map((item, idx) => (
                 <div key={idx} className="flex-1 h-full flex flex-col items-center justify-end gap-2 group cursor-pointer">
                   <div className="w-full flex-1 flex items-end">
                     <div
                       style={{ height: item.height }}
-                      className={`w-full rounded-xl transition-all duration-300 group-hover:scale-[1.03] ${
-                        item.active
-                          ? 'gradient-primary shadow-md glow-primary border border-emerald-300/50'
-                          : 'bg-gradient-to-t from-emerald-950/80 via-emerald-900/60 to-emerald-700/60 border border-emerald-500/30 group-hover:border-emerald-400 group-hover:from-emerald-900 group-hover:to-emerald-500'
-                      }`}
+                      className="w-full rounded-xl transition-all duration-300 group-hover:scale-[1.03] bg-gradient-to-t from-emerald-950/90 via-emerald-900/80 to-emerald-500/80 border border-emerald-500/40 group-hover:border-emerald-300 shadow-md"
                     />
                   </div>
-                  <span className={`text-[10px] font-mono ${item.active ? 'text-emerald-400 font-bold' : 'text-muted-foreground group-hover:text-foreground'}`}>{item.label}</span>
+                  <span className="text-[10px] font-mono text-muted-foreground group-hover:text-emerald-400 font-medium">
+                    {item.label} ({item.count})
+                  </span>
                 </div>
               ))}
             </div>
@@ -94,12 +159,12 @@ function AnalyticsChartsGrid() {
             {/* Stat Sub-boxes */}
             <div className="grid grid-cols-2 gap-2.5 mb-4">
               <div className="bg-card/60 border border-border/40 rounded-xl p-3 space-y-0.5">
-                <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground font-semibold">UPCOMING</p>
-                <p className="text-xs font-bold text-foreground">May 2026</p>
-                <p className="text-[10px] text-emerald-400 font-mono font-semibold">Scheduled</p>
+                <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground font-semibold">ACTIVE MODELS</p>
+                <p className="text-xs font-bold text-foreground font-mono">{activeModelsCount} / {totalModelsCount}</p>
+                <p className="text-[10px] text-emerald-400 font-mono font-semibold">Enabled</p>
               </div>
               <div className="bg-card/60 border border-border/40 rounded-xl p-3 space-y-0.5">
-                <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground font-semibold">SAVINGS PLAN</p>
+                <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground font-semibold">SAVINGS TIER</p>
                 <p className="text-xs font-bold text-foreground">Accelerated</p>
                 <p className="text-[10px] text-emerald-400 font-mono font-semibold">100% Free</p>
               </div>
@@ -115,26 +180,26 @@ function AnalyticsChartsGrid() {
           </Button>
         </Card>
 
-        {/* 2. Power & Prompt Usage Card */}
+        {/* 2. Token Throughput & Context Capacity Card */}
         <Card className="glass-card rounded-2xl p-5 border border-border/50 bg-[#0d110e]/90 flex flex-col justify-between shadow-lg relative overflow-hidden">
           <div>
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-sm font-bold text-foreground">Prompt Power Usage</h3>
               <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-[10px] font-mono px-2 py-0.5">Whole Cockpit</Badge>
             </div>
-            <p className="text-xs text-muted-foreground mb-4">Hourly request volume</p>
+            <p className="text-xs text-muted-foreground mb-4">Hourly throughput & capacity volume</p>
 
-            {/* Hourly Bars */}
+            {/* Dynamic Bars */}
             <div className="flex items-end justify-between h-36 gap-1.5 px-0.5 mb-4 border-b border-border/30 pb-2.5">
               {[
-                { hour: '6a', height: '40%' },
-                { hour: '8a', height: '75%' },
-                { hour: '10a', height: '85%' },
-                { hour: '12p', height: '65%' },
-                { hour: '2p', height: '90%' },
-                { hour: '4p', height: '80%' },
-                { hour: '6p', height: '88%' },
-                { hour: '8p', height: '88%' },
+                { label: '6a', height: '45%' },
+                { label: '8a', height: '70%' },
+                { label: '10a', height: '85%' },
+                { label: '12p', height: '60%' },
+                { label: '2p', height: '95%' },
+                { label: '4p', height: '80%' },
+                { label: '6p', height: '90%' },
+                { label: '8p', height: '75%' },
               ].map((bar, idx) => (
                 <div key={idx} className="flex-1 h-full flex flex-col items-center justify-end gap-2 group cursor-pointer">
                   <div className="w-full flex-1 flex items-end">
@@ -143,34 +208,36 @@ function AnalyticsChartsGrid() {
                       className="w-full rounded-xl bg-gradient-to-t from-emerald-950 via-emerald-800/80 to-emerald-400/90 border border-emerald-500/30 transition-all duration-300 group-hover:brightness-125 group-hover:border-emerald-400 shadow-sm"
                     />
                   </div>
-                  <span className="text-[10px] font-mono text-muted-foreground group-hover:text-emerald-400">{bar.hour}</span>
+                  <span className="text-[10px] font-mono text-muted-foreground group-hover:text-emerald-400">{bar.label}</span>
                 </div>
               ))}
             </div>
 
             <div className="grid grid-cols-2 gap-3 pt-1">
               <div>
-                <p className="text-[10px] font-mono text-muted-foreground uppercase font-semibold">Currently Using</p>
-                <p className="text-base font-extrabold text-foreground mt-0.5 font-mono">3.4 kW / 4.2k tk</p>
+                <p className="text-[10px] font-mono text-muted-foreground uppercase font-semibold">Max Context Capacity</p>
+                <p className="text-base font-extrabold text-foreground mt-0.5 font-mono">
+                  {(totalMaxTokens / 1000).toFixed(0)}k tk
+                </p>
               </div>
               <div>
-                <p className="text-[10px] font-mono text-muted-foreground uppercase font-semibold">Cost Savings</p>
-                <p className="text-base font-extrabold text-emerald-400 mt-0.5 font-mono">+$1.2 kW</p>
+                <p className="text-[10px] font-mono text-muted-foreground uppercase font-semibold">Estimated Cost Savings</p>
+                <p className="text-base font-extrabold text-emerald-400 mt-0.5 font-mono">+${costSavings}</p>
               </div>
             </div>
           </div>
         </Card>
 
-        {/* 3. Radar Chart Card */}
+        {/* 3. Dynamic Category Radar Chart Card */}
         <Card className="glass-card rounded-2xl p-5 border border-border/50 bg-[#0d110e]/90 flex flex-col justify-between shadow-lg relative overflow-hidden">
           <div>
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-sm font-bold text-foreground">Radar Chart - Dots</h3>
               <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-[10px] font-mono px-2 py-0.5">Category Map</Badge>
             </div>
-            <p className="text-xs text-muted-foreground mb-3">Showing total activity for the last 6 months</p>
+            <p className="text-xs text-muted-foreground mb-3">Capabilities map across configured models</p>
 
-            {/* SVG Hexagonal Radar Chart */}
+            {/* SVG Dynamic Radar Chart */}
             <div className="h-36 w-full flex items-center justify-center my-1 relative">
               <svg viewBox="0 0 200 200" className="w-36 h-36 overflow-visible">
                 {/* Radar Grid Circles / Polygons */}
@@ -186,39 +253,31 @@ function AnalyticsChartsGrid() {
                 <line x1="100" y1="100" x2="30" y2="140" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
                 <line x1="100" y1="100" x2="30" y2="60" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
 
-                {/* Data Radar Polygon */}
+                {/* Dynamic Data Radar Polygon */}
                 <polygon
-                  points="100,32 165,52 142,128 100,165 42,122 45,68"
+                  points={radarPoints}
                   fill="rgba(52, 211, 153, 0.25)"
                   stroke="#10b981"
                   strokeWidth="2"
                   className="transition-all duration-700 hover:fill-emerald-500/40"
                 />
 
-                {/* Data Dots */}
-                <circle cx="100" cy="32" r="3.5" className="fill-emerald-400 animate-pulse" />
-                <circle cx="165" cy="52" r="3.5" className="fill-emerald-400" />
-                <circle cx="142" cy="128" r="3.5" className="fill-emerald-400" />
-                <circle cx="100" cy="165" r="3.5" className="fill-emerald-400" />
-                <circle cx="42" cy="122" r="3.5" className="fill-emerald-400" />
-                <circle cx="45" cy="68" r="3.5" className="fill-emerald-400" />
-
                 {/* Axis Labels */}
-                <text x="100" y="10" textAnchor="middle" fill="#9ca3af" fontSize="9" className="font-mono">January</text>
-                <text x="180" y="58" textAnchor="start" fill="#9ca3af" fontSize="9" className="font-mono">February</text>
-                <text x="180" y="145" textAnchor="start" fill="#9ca3af" fontSize="9" className="font-mono">March</text>
-                <text x="100" y="195" textAnchor="middle" fill="#9ca3af" fontSize="9" className="font-mono">April</text>
-                <text x="20" y="145" textAnchor="end" fill="#9ca3af" fontSize="9" className="font-mono">May</text>
-                <text x="20" y="58" textAnchor="end" fill="#9ca3af" fontSize="9" className="font-mono">June</text>
+                <text x="100" y="10" textAnchor="middle" fill="#9ca3af" fontSize="9" className="font-mono">Reasoning</text>
+                <text x="180" y="58" textAnchor="start" fill="#9ca3af" fontSize="9" className="font-mono">Coding</text>
+                <text x="180" y="145" textAnchor="start" fill="#9ca3af" fontSize="9" className="font-mono">Fast Chat</text>
+                <text x="100" y="195" textAnchor="middle" fill="#9ca3af" fontSize="9" className="font-mono">Multimodal</text>
+                <text x="20" y="145" textAnchor="end" fill="#9ca3af" fontSize="9" className="font-mono">Active</text>
+                <text x="20" y="58" textAnchor="end" fill="#9ca3af" fontSize="9" className="font-mono">Total</text>
               </svg>
             </div>
           </div>
 
           <div className="pt-2 text-center border-t border-border/30">
             <p className="text-[11px] font-semibold text-foreground flex items-center justify-center gap-1.5">
-              Trending up by 5.2% this month <TrendingUp className="h-3 w-3 text-emerald-400" />
+              {totalModelsCount} Cockpit Model{totalModelsCount !== 1 ? 's' : ''} Configured <TrendingUp className="h-3 w-3 text-emerald-400" />
             </p>
-            <p className="text-[9px] text-muted-foreground font-mono mt-0.5">January - June 2026</p>
+            <p className="text-[9px] text-muted-foreground font-mono mt-0.5">Live OpenRouter Ecosystem</p>
           </div>
         </Card>
       </div>
@@ -237,7 +296,7 @@ function AnalyticsChartsGrid() {
                   Advanced Token & Usage Report
                 </DialogTitle>
                 <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                  Detailed analytics for Cockpit free model executions
+                  Detailed analytics for Cockpit model executions
                 </p>
               </div>
             </div>
@@ -252,31 +311,31 @@ function AnalyticsChartsGrid() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="bg-card/60 border border-border/40 rounded-2xl p-4 space-y-1">
                 <p className="text-[10px] font-mono uppercase text-muted-foreground font-semibold flex items-center gap-1">
-                  <Zap className="h-3 w-3 text-emerald-400" /> Total Tokens
+                  <Zap className="h-3 w-3 text-emerald-400" /> Max Context Tk
                 </p>
-                <p className="text-xl font-extrabold text-foreground font-mono">142,850</p>
-                <p className="text-[10px] text-emerald-400 font-mono">+12.4% vs last month</p>
+                <p className="text-xl font-extrabold text-foreground font-mono">{totalMaxTokens.toLocaleString()}</p>
+                <p className="text-[10px] text-emerald-400 font-mono">Available Capacity</p>
               </div>
               <div className="bg-card/60 border border-border/40 rounded-2xl p-4 space-y-1">
                 <p className="text-[10px] font-mono uppercase text-muted-foreground font-semibold flex items-center gap-1">
                   <DollarSign className="h-3 w-3 text-emerald-400" /> Total Cost
                 </p>
                 <p className="text-xl font-extrabold text-emerald-400 font-mono">$0.00</p>
-                <p className="text-[10px] text-emerald-400 font-mono">$148.50 saved</p>
+                <p className="text-[10px] text-emerald-400 font-mono">+${costSavings} saved</p>
               </div>
               <div className="bg-card/60 border border-border/40 rounded-2xl p-4 space-y-1">
                 <p className="text-[10px] font-mono uppercase text-muted-foreground font-semibold flex items-center gap-1">
                   <Clock className="h-3 w-3 text-emerald-400" /> Avg Latency
                 </p>
-                <p className="text-xl font-extrabold text-foreground font-mono">410 ms</p>
+                <p className="text-xl font-extrabold text-foreground font-mono">240 ms</p>
                 <p className="text-[10px] text-emerald-400 font-mono">Ultra Low Latency</p>
               </div>
               <div className="bg-card/60 border border-border/40 rounded-2xl p-4 space-y-1">
                 <p className="text-[10px] font-mono uppercase text-muted-foreground font-semibold flex items-center gap-1">
-                  <CheckCircle2 className="h-3 w-3 text-emerald-400" /> Uptime Rate
+                  <MessageSquare className="h-3 w-3 text-emerald-400" /> Messages Sent
                 </p>
-                <p className="text-xl font-extrabold text-foreground font-mono">99.8%</p>
-                <p className="text-[10px] text-emerald-400 font-mono">Auto 404 Fallback</p>
+                <p className="text-xl font-extrabold text-foreground font-mono">{totalMsgs.toLocaleString()}</p>
+                <p className="text-[10px] text-emerald-400 font-mono">{totalConvos} Conversations</p>
               </div>
             </div>
 
@@ -289,33 +348,47 @@ function AnalyticsChartsGrid() {
                     <tr>
                       <th className="p-3">Model Engine</th>
                       <th className="p-3">Category</th>
-                      <th className="p-3 text-right">Prompt Tk</th>
-                      <th className="p-3 text-right">Completion Tk</th>
+                      <th className="p-3 text-right">Max Tokens</th>
+                      <th className="p-3 text-right">Status</th>
                       <th className="p-3 text-right">Cost</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/20 font-mono text-[11px]">
-                    <tr className="hover:bg-muted/20">
-                      <td className="p-3 font-semibold text-foreground">meta-llama/llama-3.3-70b-instruct:free</td>
-                      <td className="p-3"><Badge variant="outline" className="text-[9px] border-emerald-500/30 text-emerald-400">Reasoning</Badge></td>
-                      <td className="p-3 text-right text-muted-foreground">58,200</td>
-                      <td className="p-3 text-right text-muted-foreground">31,400</td>
-                      <td className="p-3 text-right text-emerald-400 font-bold">$0.00</td>
-                    </tr>
-                    <tr className="hover:bg-muted/20">
-                      <td className="p-3 font-semibold text-foreground">qwen/qwen-2.5-coder-32b-instruct:free</td>
-                      <td className="p-3"><Badge variant="outline" className="text-[9px] border-blue-500/30 text-blue-400">Coding</Badge></td>
-                      <td className="p-3 text-right text-muted-foreground">22,100</td>
-                      <td className="p-3 text-right text-muted-foreground">14,200</td>
-                      <td className="p-3 text-right text-emerald-400 font-bold">$0.00</td>
-                    </tr>
-                    <tr className="hover:bg-muted/20">
-                      <td className="p-3 font-semibold text-foreground">google/gemini-2.0-flash-exp:free</td>
-                      <td className="p-3"><Badge variant="outline" className="text-[9px] border-purple-500/30 text-purple-400">Fast Chat</Badge></td>
-                      <td className="p-3 text-right text-muted-foreground">12,100</td>
-                      <td className="p-3 text-right text-muted-foreground">4,850</td>
-                      <td className="p-3 text-right text-emerald-400 font-bold">$0.00</td>
-                    </tr>
+                    {Array.isArray(models) && models.length > 0 ? (
+                      models.map((m) => {
+                        const cat = getModelCategory(m);
+                        const catLabel = CATEGORY_LABELS[cat]?.label || 'General';
+
+                        return (
+                          <tr key={m.id} className="hover:bg-muted/20">
+                            <td className="p-3">
+                              <p className="font-semibold text-foreground">{m.name}</p>
+                              <p className="text-[10px] text-muted-foreground font-mono">{m.modelId}</p>
+                            </td>
+                            <td className="p-3">
+                              <Badge variant="outline" className="text-[9px] border-emerald-500/30 text-emerald-400">
+                                {catLabel}
+                              </Badge>
+                            </td>
+                            <td className="p-3 text-right text-muted-foreground">
+                              {(m.maxTokens || 4096).toLocaleString()}
+                            </td>
+                            <td className="p-3 text-right">
+                              <span className={m.enabled ? 'text-emerald-400 font-bold' : 'text-muted-foreground'}>
+                                {m.enabled ? 'Active' : 'Disabled'}
+                              </span>
+                            </td>
+                            <td className="p-3 text-right text-emerald-400 font-bold">$0.00</td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="p-6 text-center text-muted-foreground">
+                          No models configured yet. Add your first AI model to view breakdown.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -332,12 +405,17 @@ function AnalyticsChartsGrid() {
                 variant="outline"
                 className="rounded-xl text-xs gap-1.5 border-border/60"
                 onClick={() => {
-                  const csv = "Model,Category,Prompt Tokens,Completion Tokens,Cost\nmeta-llama/llama-3.3-70b-instruct:free,Reasoning,58200,31400,0\nqwen/qwen-2.5-coder-32b-instruct:free,Coding,22100,14200,0";
+                  const headers = "Model Name,Model ID,Category,Max Tokens,Temperature,Top P,Status,Cost\n";
+                  const rows = models.map((m) => {
+                    const cat = getModelCategory(m);
+                    return `"${m.name}","${m.modelId}","${cat}",${m.maxTokens},${m.temperature},${m.topP},"${m.enabled ? 'Active' : 'Disabled'}","$0.00"`;
+                  }).join("\n");
+                  const csv = headers + (rows || "No Models Configured,,,,,,,");
                   const blob = new Blob([csv], { type: 'text/csv' });
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement('a');
                   a.href = url;
-                  a.download = 'token-usage-report.csv';
+                  a.download = `agent-hub-models-report-${new Date().toISOString().slice(0, 10)}.csv`;
                   a.click();
                 }}
               >
@@ -495,6 +573,8 @@ export default function Dashboard() {
     return counts;
   }, [models]);
 
+  const [modelToDelete, setModelToDelete] = useState<{ id: number; name: string } | null>(null);
+
   const deleteModelMutation = useDeleteModel({
     mutation: {
       onSuccess: async () => {
@@ -504,16 +584,14 @@ export default function Dashboard() {
     },
   });
 
-  const handleDeleteModel = async (id: number, name: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+  const handleConfirmDelete = async () => {
+    if (!modelToDelete) return;
 
     try {
-      await deleteModelMutation.mutateAsync({ id });
+      await deleteModelMutation.mutateAsync({ id: modelToDelete.id });
       toast({
         title: 'Model deleted',
-        description: `Successfully removed "${name}" from your cockpit.`,
+        description: `Successfully removed "${modelToDelete.name}" from your cockpit.`,
       });
     } catch (err: any) {
       toast({
@@ -521,6 +599,8 @@ export default function Dashboard() {
         description: err.message || 'Error deleting model',
         variant: 'destructive',
       });
+    } finally {
+      setModelToDelete(null);
     }
   };
 
@@ -652,7 +732,7 @@ export default function Dashboard() {
         </div>
 
         {/* Analytics & Token Usage Charts Grid */}
-        <AnalyticsChartsGrid />
+        <AnalyticsChartsGrid models={models} stats={stats} />
 
         {/* Models Section */}
         <div>
@@ -756,7 +836,11 @@ export default function Dashboard() {
                               size="icon"
                               className="h-7 w-7 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
                               title="Delete Model"
-                              onClick={(e) => handleDeleteModel(model.id, model.name, e)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                setModelToDelete({ id: model.id, name: model.name });
+                              }}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
@@ -911,6 +995,43 @@ export default function Dashboard() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Model Confirmation Modal */}
+      <AlertDialog open={!!modelToDelete} onOpenChange={(open) => !open && setModelToDelete(null)}>
+        <AlertDialogContent className="max-w-md bg-[#0d110e]/95 backdrop-blur-2xl border border-red-500/30 rounded-3xl p-6 shadow-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2.5 text-white font-extrabold text-lg">
+              <div className="p-2 rounded-xl bg-red-500/10 text-red-400">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              Delete Model?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-muted-foreground mt-2">
+              Are you sure you want to delete <span className="font-semibold text-foreground">"{modelToDelete?.name}"</span>? This will permanently remove the model from your cockpit.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-5 flex items-center justify-end gap-3">
+            <AlertDialogCancel className="rounded-xl text-xs bg-secondary/80 hover:bg-secondary border-border/40">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl text-xs font-bold shadow-lg gap-2"
+              disabled={deleteModelMutation.isPending}
+            >
+              {deleteModelMutation.isPending ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-3.5 w-3.5" /> Delete Model
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
