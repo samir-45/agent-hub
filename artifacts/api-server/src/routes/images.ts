@@ -129,11 +129,19 @@ imagesRouter.post("/generate", async (req, res) => {
     let usedProvider = "openrouter";
 
     // Attempt 1: OpenRouter Image Endpoint
+    const userEmail = (req.headers["x-user-email"] as string) || (req as any).auth?.claims?.email || (req as any).auth?.sessionClaims?.email;
+    const userRole = (req.headers["x-user-role"] as string) || (req as any).auth?.claims?.publicMetadata?.role || (req as any).auth?.sessionClaims?.publicMetadata?.role;
+    const userHeaderKey = req.headers["x-openrouter-key"] as string | undefined;
+
+    let apiKey: string | null = null;
     try {
-      const userEmail = (req as any).auth?.claims?.email || (req as any).auth?.sessionClaims?.email;
-      const userRole = (req as any).auth?.claims?.publicMetadata?.role || (req as any).auth?.sessionClaims?.publicMetadata?.role;
-      const userHeaderKey = req.headers["x-openrouter-key"] as string | undefined;
-      const apiKey = await getOpenRouterApiKey(userEmail, userHeaderKey, userRole);
+      apiKey = await getOpenRouterApiKey(userEmail, userHeaderKey, userRole);
+    } catch (keyErr: any) {
+      res.status(401).json({ error: keyErr.message || "OpenRouter API Key Required. Please pair your API key in Settings." });
+      return;
+    }
+
+    try {
       const openRouterRes = await fetch("https://openrouter.ai/api/v1/images/generations", {
         method: "POST",
         headers: {

@@ -77349,24 +77349,26 @@ async function getOpenRouterApiKey(userEmail, userHeaderKey, userRole) {
   if (userHeaderKey && typeof userHeaderKey === "string" && userHeaderKey.trim().startsWith("sk-or-")) {
     return userHeaderKey.trim();
   }
-  try {
-    const [row] = await db.select().from(settingsTable).where(eq(settingsTable.key, "openrouter_api_key"));
-    if (row && row.encryptedValue) {
-      const key = decrypt(row.encryptedValue, row.iv, row.authTag);
-      if (key && key.startsWith("sk-or-")) {
-        return key;
-      }
-    }
-  } catch {
-  }
   const isAdmin = Boolean(
     userEmail && userEmail.trim().toLowerCase() === "mdmahinkhan851@gmail.com" || userRole === "admin"
   );
-  if (isAdmin && process.env.OPENROUTER_API_KEY) {
-    return process.env.OPENROUTER_API_KEY;
+  if (isAdmin) {
+    try {
+      const [row] = await db.select().from(settingsTable).where(eq(settingsTable.key, "openrouter_api_key"));
+      if (row && row.encryptedValue) {
+        const key = decrypt(row.encryptedValue, row.iv, row.authTag);
+        if (key && key.startsWith("sk-or-")) {
+          return key;
+        }
+      }
+    } catch {
+    }
+    if (process.env.OPENROUTER_API_KEY) {
+      return process.env.OPENROUTER_API_KEY;
+    }
   }
   throw new Error(
-    "Security Policy: OpenRouter API Key Required. Non-admin users must sign in and pair their own OpenRouter API key (sk-or-v1-...) in Settings or request header."
+    "Security Policy: OpenRouter API Key Required. Non-admin users must pair their own OpenRouter API key (sk-or-v1-...) in Settings."
   );
 }
 function invalidateApiKeyCache() {
@@ -78102,11 +78104,17 @@ imagesRouter.post("/generate", async (req, res) => {
     }
     let imageUrl = null;
     let usedProvider = "openrouter";
+    const userEmail = req.headers["x-user-email"] || req.auth?.claims?.email || req.auth?.sessionClaims?.email;
+    const userRole = req.headers["x-user-role"] || req.auth?.claims?.publicMetadata?.role || req.auth?.sessionClaims?.publicMetadata?.role;
+    const userHeaderKey = req.headers["x-openrouter-key"];
+    let apiKey = null;
     try {
-      const userEmail = req.auth?.claims?.email || req.auth?.sessionClaims?.email;
-      const userRole = req.auth?.claims?.publicMetadata?.role || req.auth?.sessionClaims?.publicMetadata?.role;
-      const userHeaderKey = req.headers["x-openrouter-key"];
-      const apiKey = await getOpenRouterApiKey(userEmail, userHeaderKey, userRole);
+      apiKey = await getOpenRouterApiKey(userEmail, userHeaderKey, userRole);
+    } catch (keyErr) {
+      res.status(401).json({ error: keyErr.message || "OpenRouter API Key Required. Please pair your API key in Settings." });
+      return;
+    }
+    try {
       const openRouterRes = await fetch("https://openrouter.ai/api/v1/images/generations", {
         method: "POST",
         headers: {
