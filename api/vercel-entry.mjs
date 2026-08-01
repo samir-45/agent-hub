@@ -66078,7 +66078,7 @@ router2.get("/stats", async (req, res) => {
       enabledModels: sql`count(*) filter (where ${modelsTable.enabled})::int`
     }).from(modelsTable).where(userOwnershipFilter(userEmail));
     const [convCount] = await db.select({ total: sql`count(*)::int` }).from(conversations).where(userEmail ? eq(conversations.userId, userEmail) : isNull(conversations.userId));
-    const [msgCount] = await db.select({ total: sql`count(*)::int` }).from(messages);
+    const [msgCount] = await db.select({ total: sql`count(${messages.id})::int` }).from(messages).innerJoin(conversations, eq(messages.conversationId, conversations.id)).where(userEmail ? eq(conversations.userId, userEmail) : isNull(conversations.userId));
     const stats = {
       totalModels: modelCounts?.totalModels ?? 0,
       enabledModels: modelCounts?.enabledModels ?? 0,

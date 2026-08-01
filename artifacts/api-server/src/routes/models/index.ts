@@ -51,8 +51,10 @@ router.get("/stats", async (req, res): Promise<void> => {
       .where(userEmail ? eq(conversations.userId, userEmail) : isNull(conversations.userId));
 
     const [msgCount] = await db
-      .select({ total: sql<number>`count(*)::int` })
-      .from(messages);
+      .select({ total: sql<number>`count(${messages.id})::int` })
+      .from(messages)
+      .innerJoin(conversations, eq(messages.conversationId, conversations.id))
+      .where(userEmail ? eq(conversations.userId, userEmail) : isNull(conversations.userId));
 
     const stats = {
       totalModels: modelCounts?.totalModels ?? 0,
