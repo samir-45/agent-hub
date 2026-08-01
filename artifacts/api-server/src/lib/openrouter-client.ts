@@ -38,14 +38,15 @@ export async function getOpenRouterApiKey(userEmail?: string, userHeaderKey?: st
       // Fall through to env
     }
 
-    if (process.env.OPENROUTER_API_KEY) {
-      return process.env.OPENROUTER_API_KEY;
-    }
+  }
+
+  if (process.env.OPENROUTER_API_KEY) {
+    return process.env.OPENROUTER_API_KEY;
   }
 
   // 3. Non-admin users MUST bring their own API key (BYOK policy)
   throw new Error(
-    "Security Policy: OpenRouter API Key Required. Non-admin users must pair their own OpenRouter API key (sk-or-v1-...) in Settings."
+    "OpenRouter API Key Required. Please pair your OpenRouter API Key in the top header or Settings."
   );
 }
 
