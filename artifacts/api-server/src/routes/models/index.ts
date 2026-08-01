@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql, isNull, or } from "drizzle-orm";
 import { db, modelsTable, conversations, messages } from "@workspace/db";
 import {
   CreateModelBody,
@@ -16,19 +16,41 @@ import {
 
 const router: IRouter = Router();
 
-// GET /stats
+/** Extract the caller's email from request headers or Clerk auth. */
+function getUserIdentity(req: any): string {
+  const rawEmail =
+    (req.headers["x-user-email"] as string) ||
+    req.auth?.claims?.email ||
+    req.auth?.sessionClaims?.email ||
+    req.auth?.email;
+  return rawEmail ? rawEmail.toLowerCase().trim() : "";
+}
+
+/** Build a drizzle WHERE clause that limits results to the caller's own rows. */
+function userOwnershipFilter(userEmail: string) {
+  // Show models that belong to this user OR legacy models with no owner (userId IS NULL)
+  return userEmail
+    ? or(eq(modelsTable.userId, userEmail), isNull(modelsTable.userId))
+    : isNull(modelsTable.userId);
+}
+
+// GET /stats — scoped to the calling user
 router.get("/stats", async (req, res): Promise<void> => {
   try {
+    const userEmail = getUserIdentity(req);
+
     const [modelCounts] = await db
       .select({
         totalModels: sql<number>`count(*)::int`,
         enabledModels: sql<number>`count(*) filter (where ${modelsTable.enabled})::int`,
       })
-      .from(modelsTable);
+      .from(modelsTable)
+      .where(userOwnershipFilter(userEmail));
 
     const [convCount] = await db
       .select({ total: sql<number>`count(*)::int` })
-      .from(conversations);
+      .from(conversations)
+      .where(userEmail ? eq(conversations.userId, userEmail) : isNull(conversations.userId));
 
     const [msgCount] = await db
       .select({ total: sql<number>`count(*)::int` })
@@ -52,17 +74,22 @@ router.get("/stats", async (req, res): Promise<void> => {
   }
 });
 
-// GET /models
-router.get("/models", async (_req, res): Promise<void> => {
+// GET /models — only return this user's models
+router.get("/models", async (req, res): Promise<void> => {
   try {
-    const models = await db.select().from(modelsTable).orderBy(modelsTable.createdAt);
+    const userEmail = getUserIdentity(req);
+    const models = await db
+      .select()
+      .from(modelsTable)
+      .where(userOwnershipFilter(userEmail))
+      .orderBy(modelsTable.createdAt);
     res.json(ListModelsResponse.parse(models));
   } catch (err: any) {
     res.json([]);
   }
 });
 
-// POST /models
+// POST /models — tag with the caller's userId
 router.post("/models", async (req, res): Promise<void> => {
   try {
     const parsed = CreateModelBody.safeParse(req.body);
@@ -70,7 +97,9 @@ router.post("/models", async (req, res): Promise<void> => {
       res.status(400).json({ error: parsed.error.message });
       return;
     }
+    const userEmail = getUserIdentity(req);
     const [model] = await db.insert(modelsTable).values({
+      userId: userEmail || null,
       name: parsed.data.name,
       modelId: parsed.data.modelId,
       description: parsed.data.description ?? null,
@@ -161,9 +190,11 @@ const BEST_FREE_MODELS = [
   },
 ];
 
-// POST /models/seed-free-models
-router.post("/models/seed-free-models", async (_req, res): Promise<void> => {
+// POST /models/seed-free-models — scoped to user
+router.post("/models/seed-free-models", async (req, res): Promise<void> => {
   try {
+    const userEmail = getUserIdentity(req);
+
     // 1. Query OpenRouter's live public catalog API for 100% 0-cost free models
     let liveFreeModels: Array<{ name: string; modelId: string; description: string; maxTokens: number; temperature: number }> = [];
     try {
@@ -192,7 +223,8 @@ router.post("/models/seed-free-models", async (_req, res): Promise<void> => {
     // Combine live models or fallback to static list if live models empty
     const pool = liveFreeModels.length > 0 ? liveFreeModels : BEST_FREE_MODELS;
 
-    const existing = await db.select().from(modelsTable);
+    // Only check THIS user's models for deduplication
+    const existing = await db.select().from(modelsTable).where(userOwnershipFilter(userEmail));
     const existingIds = new Set(existing.map((m) => m.modelId));
 
     const inserted = [];
@@ -201,6 +233,7 @@ router.post("/models/seed-free-models", async (_req, res): Promise<void> => {
         const [newRow] = await db
           .insert(modelsTable)
           .values({
+            userId: userEmail || null,
             name: item.name,
             modelId: item.modelId,
             description: item.description,
@@ -222,9 +255,10 @@ router.post("/models/seed-free-models", async (_req, res): Promise<void> => {
   }
 });
 
-// POST /models/purge-non-free
-router.post("/models/purge-non-free", async (_req, res): Promise<void> => {
+// POST /models/purge-non-free — scoped to user
+router.post("/models/purge-non-free", async (req, res): Promise<void> => {
   try {
+    const userEmail = getUserIdentity(req);
     const liveRes = await fetch("https://openrouter.ai/api/v1/models");
     const activeFreeIds = new Set<string>();
 
@@ -240,7 +274,7 @@ router.post("/models/purge-non-free", async (_req, res): Promise<void> => {
       });
     }
 
-    const existing = await db.select().from(modelsTable);
+    const existing = await db.select().from(modelsTable).where(userOwnershipFilter(userEmail));
     const removedNames: string[] = [];
 
     for (const m of existing) {
@@ -258,7 +292,7 @@ router.post("/models/purge-non-free", async (_req, res): Promise<void> => {
   }
 });
 
-// GET /models/:id
+// GET /models/:id — user can only access their own models
 router.get("/models/:id", async (req, res): Promise<void> => {
   try {
     const params = GetModelParams.safeParse(req.params);
@@ -266,7 +300,11 @@ router.get("/models/:id", async (req, res): Promise<void> => {
       res.status(400).json({ error: params.error.message });
       return;
     }
-    const [model] = await db.select().from(modelsTable).where(eq(modelsTable.id, params.data.id));
+    const userEmail = getUserIdentity(req);
+    const [model] = await db
+      .select()
+      .from(modelsTable)
+      .where(and(eq(modelsTable.id, params.data.id), userOwnershipFilter(userEmail)));
     if (!model) {
       res.status(404).json({ error: "Model not found" });
       return;
@@ -277,7 +315,7 @@ router.get("/models/:id", async (req, res): Promise<void> => {
   }
 });
 
-// PATCH /models/:id
+// PATCH /models/:id — only the owner can edit
 router.patch("/models/:id", async (req, res): Promise<void> => {
   try {
     const params = UpdateModelParams.safeParse(req.params);
@@ -288,6 +326,18 @@ router.patch("/models/:id", async (req, res): Promise<void> => {
     const parsed = UpdateModelBody.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+
+    const userEmail = getUserIdentity(req);
+
+    // Verify ownership first
+    const [existing] = await db
+      .select()
+      .from(modelsTable)
+      .where(and(eq(modelsTable.id, params.data.id), userOwnershipFilter(userEmail)));
+    if (!existing) {
+      res.status(404).json({ error: "Model not found" });
       return;
     }
 
@@ -317,7 +367,7 @@ router.patch("/models/:id", async (req, res): Promise<void> => {
   }
 });
 
-// DELETE /models/:id
+// DELETE /models/:id — only the owner can delete
 router.delete("/models/:id", async (req, res): Promise<void> => {
   try {
     const params = DeleteModelParams.safeParse(req.params);
@@ -325,7 +375,11 @@ router.delete("/models/:id", async (req, res): Promise<void> => {
       res.status(400).json({ error: params.error.message });
       return;
     }
-    const [model] = await db.delete(modelsTable).where(eq(modelsTable.id, params.data.id)).returning();
+    const userEmail = getUserIdentity(req);
+    const [model] = await db
+      .delete(modelsTable)
+      .where(and(eq(modelsTable.id, params.data.id), userOwnershipFilter(userEmail)))
+      .returning();
     if (!model) {
       res.status(404).json({ error: "Model not found" });
       return;

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 import { db, modelsTable, conversations, messages } from "@workspace/db";
 import { getOpenRouterClient } from "../../lib/openrouter-client";
 import { tavilySearch } from "../../lib/tavily";
@@ -203,18 +203,23 @@ router.post("/models/:modelId/conversations/:id/messages", async (req, res): Pro
     return;
   }
 
-  // Load model config
+  // Load model config — verify user has access to this model
+  const { userId, email } = getUserIdentity(req);
+  const userIdentifier = email || userId;
+
+  const modelOwnerFilter = userIdentifier
+    ? or(eq(modelsTable.userId, userIdentifier), isNull(modelsTable.userId))
+    : isNull(modelsTable.userId);
+
   const [model] = await db
     .select()
     .from(modelsTable)
-    .where(eq(modelsTable.id, params.data.modelId));
+    .where(and(eq(modelsTable.id, params.data.modelId), modelOwnerFilter));
   if (!model) {
     res.status(404).json({ error: "Model not found" });
     return;
   }
 
-  const { userId, email } = getUserIdentity(req);
-  const userIdentifier = email || userId;
 
   // Load conversation with strict ownership check
   const [conv] = await db

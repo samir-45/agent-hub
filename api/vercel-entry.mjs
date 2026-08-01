@@ -66063,13 +66063,21 @@ var db = drizzle(pool, { schema: schema_exports });
 
 // src/routes/models/index.ts
 var router2 = (0, import_express2.Router)();
+function getUserIdentity(req) {
+  const rawEmail = req.headers["x-user-email"] || req.auth?.claims?.email || req.auth?.sessionClaims?.email || req.auth?.email;
+  return rawEmail ? rawEmail.toLowerCase().trim() : "";
+}
+function userOwnershipFilter(userEmail) {
+  return userEmail ? or(eq(modelsTable.userId, userEmail), isNull(modelsTable.userId)) : isNull(modelsTable.userId);
+}
 router2.get("/stats", async (req, res) => {
   try {
+    const userEmail = getUserIdentity(req);
     const [modelCounts] = await db.select({
       totalModels: sql`count(*)::int`,
       enabledModels: sql`count(*) filter (where ${modelsTable.enabled})::int`
-    }).from(modelsTable);
-    const [convCount] = await db.select({ total: sql`count(*)::int` }).from(conversations);
+    }).from(modelsTable).where(userOwnershipFilter(userEmail));
+    const [convCount] = await db.select({ total: sql`count(*)::int` }).from(conversations).where(userEmail ? eq(conversations.userId, userEmail) : isNull(conversations.userId));
     const [msgCount] = await db.select({ total: sql`count(*)::int` }).from(messages);
     const stats = {
       totalModels: modelCounts?.totalModels ?? 0,
@@ -66087,9 +66095,10 @@ router2.get("/stats", async (req, res) => {
     });
   }
 });
-router2.get("/models", async (_req, res) => {
+router2.get("/models", async (req, res) => {
   try {
-    const models = await db.select().from(modelsTable).orderBy(modelsTable.createdAt);
+    const userEmail = getUserIdentity(req);
+    const models = await db.select().from(modelsTable).where(userOwnershipFilter(userEmail)).orderBy(modelsTable.createdAt);
     res.json(ListModelsResponse.parse(models));
   } catch (err) {
     res.json([]);
@@ -66102,7 +66111,9 @@ router2.post("/models", async (req, res) => {
       res.status(400).json({ error: parsed.error.message });
       return;
     }
+    const userEmail = getUserIdentity(req);
     const [model] = await db.insert(modelsTable).values({
+      userId: userEmail || null,
       name: parsed.data.name,
       modelId: parsed.data.modelId,
       description: parsed.data.description ?? null,
@@ -66191,8 +66202,9 @@ var BEST_FREE_MODELS = [
     temperature: 0.7
   }
 ];
-router2.post("/models/seed-free-models", async (_req, res) => {
+router2.post("/models/seed-free-models", async (req, res) => {
   try {
+    const userEmail = getUserIdentity(req);
     let liveFreeModels = [];
     try {
       const liveRes = await fetch("https://openrouter.ai/api/v1/models");
@@ -66215,12 +66227,13 @@ router2.post("/models/seed-free-models", async (_req, res) => {
       console.warn("Could not query OpenRouter live API, falling back to verified preset list:", apiErr);
     }
     const pool2 = liveFreeModels.length > 0 ? liveFreeModels : BEST_FREE_MODELS;
-    const existing = await db.select().from(modelsTable);
+    const existing = await db.select().from(modelsTable).where(userOwnershipFilter(userEmail));
     const existingIds = new Set(existing.map((m) => m.modelId));
     const inserted = [];
     for (const item of pool2) {
       if (!existingIds.has(item.modelId)) {
         const [newRow] = await db.insert(modelsTable).values({
+          userId: userEmail || null,
           name: item.name,
           modelId: item.modelId,
           description: item.description,
@@ -66239,8 +66252,9 @@ router2.post("/models/seed-free-models", async (_req, res) => {
     res.status(500).json({ error: error40.message || "Failed to seed free models" });
   }
 });
-router2.post("/models/purge-non-free", async (_req, res) => {
+router2.post("/models/purge-non-free", async (req, res) => {
   try {
+    const userEmail = getUserIdentity(req);
     const liveRes = await fetch("https://openrouter.ai/api/v1/models");
     const activeFreeIds = /* @__PURE__ */ new Set();
     if (liveRes.ok) {
@@ -66254,7 +66268,7 @@ router2.post("/models/purge-non-free", async (_req, res) => {
         }
       });
     }
-    const existing = await db.select().from(modelsTable);
+    const existing = await db.select().from(modelsTable).where(userOwnershipFilter(userEmail));
     const removedNames = [];
     for (const m of existing) {
       const isFree = m.modelId.endsWith(":free") && (activeFreeIds.size === 0 || activeFreeIds.has(m.modelId));
@@ -66276,7 +66290,8 @@ router2.get("/models/:id", async (req, res) => {
       res.status(400).json({ error: params.error.message });
       return;
     }
-    const [model] = await db.select().from(modelsTable).where(eq(modelsTable.id, params.data.id));
+    const userEmail = getUserIdentity(req);
+    const [model] = await db.select().from(modelsTable).where(and(eq(modelsTable.id, params.data.id), userOwnershipFilter(userEmail)));
     if (!model) {
       res.status(404).json({ error: "Model not found" });
       return;
@@ -66296,6 +66311,12 @@ router2.patch("/models/:id", async (req, res) => {
     const parsed = UpdateModelBody.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const userEmail = getUserIdentity(req);
+    const [existing] = await db.select().from(modelsTable).where(and(eq(modelsTable.id, params.data.id), userOwnershipFilter(userEmail)));
+    if (!existing) {
+      res.status(404).json({ error: "Model not found" });
       return;
     }
     const updateData = {};
@@ -66325,7 +66346,8 @@ router2.delete("/models/:id", async (req, res) => {
       res.status(400).json({ error: params.error.message });
       return;
     }
-    const [model] = await db.delete(modelsTable).where(eq(modelsTable.id, params.data.id)).returning();
+    const userEmail = getUserIdentity(req);
+    const [model] = await db.delete(modelsTable).where(and(eq(modelsTable.id, params.data.id), userOwnershipFilter(userEmail))).returning();
     if (!model) {
       res.status(404).json({ error: "Model not found" });
       return;
@@ -77404,7 +77426,7 @@ async function tavilySearch(query) {
 
 // src/routes/conversations/index.ts
 var router3 = (0, import_express3.Router)();
-function getUserIdentity(req) {
+function getUserIdentity2(req) {
   const rawEmail = req.headers["x-user-email"] || req.auth?.claims?.email || req.auth?.sessionClaims?.email || req.auth?.email;
   const role = req.headers["x-user-role"] || req.auth?.claims?.publicMetadata?.role || req.auth?.sessionClaims?.publicMetadata?.role;
   const email3 = rawEmail ? rawEmail.toLowerCase().trim() : "mdmahinkhan851@gmail.com";
@@ -77417,7 +77439,7 @@ router3.get("/models/:modelId/conversations", async (req, res) => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const { userId, email: email3 } = getUserIdentity(req);
+  const { userId, email: email3 } = getUserIdentity2(req);
   const userIdentifier = email3 || userId;
   const convs = await db.select().from(conversations).where(
     and(
@@ -77443,7 +77465,7 @@ router3.post("/models/:modelId/conversations", async (req, res) => {
     res.status(404).json({ error: "Model not found" });
     return;
   }
-  const { userId, email: email3 } = getUserIdentity(req);
+  const { userId, email: email3 } = getUserIdentity2(req);
   const userIdentifier = email3 || userId;
   const [conv] = await db.insert(conversations).values({
     modelId: params.data.modelId,
@@ -77458,7 +77480,7 @@ router3.get("/models/:modelId/conversations/:id", async (req, res) => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const { userId, email: email3 } = getUserIdentity(req);
+  const { userId, email: email3 } = getUserIdentity2(req);
   const userIdentifier = email3 || userId;
   const [conv] = await db.select().from(conversations).where(
     and(
@@ -77480,7 +77502,7 @@ router3.delete("/models/:modelId/conversations/:id", async (req, res) => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const { userId, email: email3 } = getUserIdentity(req);
+  const { userId, email: email3 } = getUserIdentity2(req);
   const userIdentifier = email3 || userId;
   const [conv] = await db.delete(conversations).where(
     and(
@@ -77501,7 +77523,7 @@ router3.get("/models/:modelId/conversations/:id/messages", async (req, res) => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const { userId, email: email3 } = getUserIdentity(req);
+  const { userId, email: email3 } = getUserIdentity2(req);
   const userIdentifier = email3 || userId;
   const [conv] = await db.select().from(conversations).where(
     and(
@@ -77528,13 +77550,14 @@ router3.post("/models/:modelId/conversations/:id/messages", async (req, res) => 
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [model] = await db.select().from(modelsTable).where(eq(modelsTable.id, params.data.modelId));
+  const { userId, email: email3 } = getUserIdentity2(req);
+  const userIdentifier = email3 || userId;
+  const modelOwnerFilter = userIdentifier ? or(eq(modelsTable.userId, userIdentifier), isNull(modelsTable.userId)) : isNull(modelsTable.userId);
+  const [model] = await db.select().from(modelsTable).where(and(eq(modelsTable.id, params.data.modelId), modelOwnerFilter));
   if (!model) {
     res.status(404).json({ error: "Model not found" });
     return;
   }
-  const { userId, email: email3 } = getUserIdentity(req);
-  const userIdentifier = email3 || userId;
   const [conv] = await db.select().from(conversations).where(
     and(
       eq(conversations.id, params.data.id),
