@@ -397,41 +397,24 @@ export default function ImageStudio() {
         if (text.startsWith('{')) {
           newImage = JSON.parse(text);
         }
+      } else {
+        const errJson = await res.json().catch(() => ({ error: 'Image generation failed' }));
+        toast({
+          title: 'API Key Required',
+          description: errJson.error || 'Please pair your OpenRouter API key in Settings to generate images.',
+          variant: 'destructive',
+        });
+        setIsGenerating(false);
+        return;
       }
-    } catch {}
-
-    // Instant Fallback Engine (Guarantees image generation succeeds even if server endpoint is restarting or unavailable)
-    if (!newImage) {
-      const { width, height } = DIMENSIONS[selectedRatio] || { width: 1024, height: 1024 };
-      let enhanced = prompt.trim();
-      if (refImageUrl.trim()) {
-        enhanced = `Image-to-Image transformation of reference photo, maintaining original visual composition, pose, and structure, stylized with: ${enhanced}`;
-      }
-      if (selectedStyle && selectedStyle !== 'none') {
-        enhanced = `${enhanced}, ${selectedStyle} style, highly detailed, 8k resolution`;
-      }
-      if (negativePrompt.trim()) {
-        enhanced = `${enhanced} --no ${negativePrompt.trim()}`;
-      }
-
-      const seed = Math.floor(Math.random() * 1000000);
-      const encoded = encodeURIComponent(enhanced);
-      const polModel = selectedModel.includes('/') ? (selectedModel.split('/').pop()?.includes('flux') ? 'flux' : 'flux') : selectedModel;
-      const refParam = buildRefParam(refImageUrl);
-      const url = `https://image.pollinations.ai/prompt/${encoded}?width=${width}&height=${height}&seed=${seed}&model=${encodeURIComponent(polModel || 'flux')}${refParam}&nologo=true`;
-
-      newImage = {
-        id: Date.now(),
-        url,
-        prompt: prompt.trim(),
-        enhancedPrompt: enhanced,
-        model: selectedModel,
-        aspectRatio: selectedRatio,
-        style: selectedStyle,
-        width,
-        height,
-        createdAt: new Date().toISOString(),
-      };
+    } catch (err: any) {
+      toast({
+        title: 'Generation Error',
+        description: err?.message || 'Failed to generate image. Please pair your API key in Settings.',
+        variant: 'destructive',
+      });
+      setIsGenerating(false);
+      return;
     }
 
     setHistory((prev) => [newImage!, ...prev]);
