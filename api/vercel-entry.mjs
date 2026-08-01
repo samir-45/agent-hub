@@ -66068,7 +66068,7 @@ function getUserIdentity(req) {
   return rawEmail ? rawEmail.toLowerCase().trim() : "";
 }
 function userOwnershipFilter(userEmail) {
-  return userEmail ? or(eq(modelsTable.userId, userEmail), isNull(modelsTable.userId)) : isNull(modelsTable.userId);
+  return eq(modelsTable.userId, userEmail);
 }
 router2.get("/stats", async (req, res) => {
   try {
@@ -77552,7 +77552,7 @@ router3.post("/models/:modelId/conversations/:id/messages", async (req, res) => 
   }
   const { userId, email: email3 } = getUserIdentity2(req);
   const userIdentifier = email3 || userId;
-  const modelOwnerFilter = userIdentifier ? or(eq(modelsTable.userId, userIdentifier), isNull(modelsTable.userId)) : isNull(modelsTable.userId);
+  const modelOwnerFilter = eq(modelsTable.userId, userIdentifier);
   const [model] = await db.select().from(modelsTable).where(and(eq(modelsTable.id, params.data.modelId), modelOwnerFilter));
   if (!model) {
     res.status(404).json({ error: "Model not found" });
@@ -77974,6 +77974,20 @@ router5.post("/admin/users/:userId/ban", checkAdmin, async (req, res) => {
       }
     }
     res.json({ success: true, userId, banned: ban });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+router5.post("/admin/claim-orphaned-data", checkAdmin, async (req, res) => {
+  try {
+    const adminEmail = ADMIN_EMAILS[0];
+    const claimedModels = await db.update(modelsTable).set({ userId: adminEmail }).where(isNull(modelsTable.userId)).returning({ id: modelsTable.id, name: modelsTable.name });
+    const claimedConvs = await db.update(conversations).set({ userId: adminEmail }).where(isNull(conversations.userId)).returning({ id: conversations.id, title: conversations.title });
+    res.json({
+      message: `Claimed ${claimedModels.length} models and ${claimedConvs.length} conversations for ${adminEmail}`,
+      models: claimedModels,
+      conversations: claimedConvs
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

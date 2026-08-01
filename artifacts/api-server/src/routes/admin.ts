@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { count, sql, eq } from "drizzle-orm";
+import { count, sql, eq, isNull } from "drizzle-orm";
 import { db, modelsTable, conversations, messages } from "@workspace/db";
 import { createClerkClient } from "@clerk/backend";
 import fs from "fs";
@@ -251,6 +251,32 @@ router.post("/admin/users/:userId/ban", checkAdmin, async (req, res) => {
       }
     }
     res.json({ success: true, userId, banned: ban });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+// POST /api/admin/claim-orphaned-data — one-time migration to claim orphaned rows
+router.post("/admin/claim-orphaned-data", checkAdmin, async (req, res) => {
+  try {
+    const adminEmail = ADMIN_EMAILS[0];
+
+    const claimedModels = await db
+      .update(modelsTable)
+      .set({ userId: adminEmail })
+      .where(isNull(modelsTable.userId))
+      .returning({ id: modelsTable.id, name: modelsTable.name });
+
+    const claimedConvs = await db
+      .update(conversations)
+      .set({ userId: adminEmail })
+      .where(isNull(conversations.userId))
+      .returning({ id: conversations.id, title: conversations.title });
+
+    res.json({
+      message: `Claimed ${claimedModels.length} models and ${claimedConvs.length} conversations for ${adminEmail}`,
+      models: claimedModels,
+      conversations: claimedConvs,
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

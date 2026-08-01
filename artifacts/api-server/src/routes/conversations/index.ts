@@ -207,9 +207,7 @@ router.post("/models/:modelId/conversations/:id/messages", async (req, res): Pro
   const { userId, email } = getUserIdentity(req);
   const userIdentifier = email || userId;
 
-  const modelOwnerFilter = userIdentifier
-    ? or(eq(modelsTable.userId, userIdentifier), isNull(modelsTable.userId))
-    : isNull(modelsTable.userId);
+  const modelOwnerFilter = eq(modelsTable.userId, userIdentifier);
 
   const [model] = await db
     .select()

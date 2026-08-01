@@ -28,10 +28,8 @@ function getUserIdentity(req: any): string {
 
 /** Build a drizzle WHERE clause that limits results to the caller's own rows. */
 function userOwnershipFilter(userEmail: string) {
-  // Show models that belong to this user OR legacy models with no owner (userId IS NULL)
-  return userEmail
-    ? or(eq(modelsTable.userId, userEmail), isNull(modelsTable.userId))
-    : isNull(modelsTable.userId);
+  // Strict: only show models that belong to this exact user
+  return eq(modelsTable.userId, userEmail);
 }
 
 // GET /stats — scoped to the calling user
