@@ -401,13 +401,26 @@ export default function AgentWorkflowsPage() {
         {/* Input & Runner Section */}
         <Card className="bg-card/60 border-border/40 rounded-2xl shadow-xl backdrop-blur-xl">
           <CardContent className="p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{selectedPreset.icon}</span>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-border/30">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">{selectedPreset.icon}</span>
                 <div>
-                  <h3 className="text-sm font-bold text-white">{selectedPreset.title}</h3>
-                  <p className="text-xs text-muted-foreground">Configured Agents: {selectedPreset.agents.map((a) => a.role).join(" → ")}</p>
+                  <h3 className="text-base font-bold text-white">{selectedPreset.title}</h3>
+                  <p className="text-xs text-emerald-400 font-mono">{selectedPreset.subtitle}</p>
                 </div>
+              </div>
+
+              {/* Active Agent Team & Assigned AI Models */}
+              <div className="flex flex-wrap gap-2 items-center">
+                {selectedPreset.agents.map((agent, i) => (
+                  <div key={i} className="flex items-center gap-1.5 bg-muted/60 border border-border/50 px-2.5 py-1 rounded-xl text-xs">
+                    <span>{agent.avatar}</span>
+                    <span className="font-semibold text-foreground">{agent.role}:</span>
+                    <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/40 text-emerald-400 bg-emerald-500/5 px-1.5 py-0">
+                      {agent.model}
+                    </Badge>
+                  </div>
+                ))}
               </div>
             </div>
 
