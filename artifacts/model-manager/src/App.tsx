@@ -44,11 +44,13 @@ function AuthLanding() {
 }
 
 import AdminPage from '@/pages/admin';
+import AgentWorkflowsPage from '@/pages/workflows';
 
 function Router() {
   return (
     <Switch>
       <Route path="/">{() => <Dashboard />}</Route>
+      <Route path="/workflows">{() => <AgentWorkflowsPage />}</Route>
       <Route path="/models/new">{() => <AddModel />}</Route>
       <Route path="/models/:id">{(params) => <ModelDetail />}</Route>
       <Route path="/settings">{() => <Settings />}</Route>

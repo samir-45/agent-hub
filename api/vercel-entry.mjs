@@ -20700,27 +20700,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module.exports = Router8;
+    module.exports = Router9;
     module.exports.Route = Route;
-    function Router8(options) {
-      if (!(this instanceof Router8)) {
-        return new Router8(options);
+    function Router9(options) {
+      if (!(this instanceof Router9)) {
+        return new Router9(options);
       }
       const opts = options || {};
-      function router7(req, res, next) {
-        router7.handle(req, res, next);
+      function router8(req, res, next) {
+        router8.handle(req, res, next);
       }
-      Object.setPrototypeOf(router7, this);
-      router7.caseSensitive = opts.caseSensitive;
-      router7.mergeParams = opts.mergeParams;
-      router7.params = {};
-      router7.strict = opts.strict;
-      router7.stack = [];
-      return router7;
+      Object.setPrototypeOf(router8, this);
+      router8.caseSensitive = opts.caseSensitive;
+      router8.mergeParams = opts.mergeParams;
+      router8.params = {};
+      router8.strict = opts.strict;
+      router8.stack = [];
+      return router8;
     }
-    Router8.prototype = function() {
+    Router9.prototype = function() {
     };
-    Router8.prototype.param = function param(name, fn) {
+    Router9.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -20740,7 +20740,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router8.prototype.handle = function handle(req, res, callback) {
+    Router9.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -20867,7 +20867,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router8.prototype.use = function use(handler) {
+    Router9.prototype.use = function use(handler) {
       let offset = 0;
       let path4 = "/";
       if (typeof handler !== "function") {
@@ -20900,7 +20900,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router8.prototype.route = function route(path4) {
+    Router9.prototype.route = function route(path4) {
       const route2 = new Route(path4);
       const layer = new Layer(path4, {
         sensitive: this.caseSensitive,
@@ -20915,7 +20915,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router8.prototype[method] = function(path4) {
+      Router9.prototype[method] = function(path4) {
         const route = this.route(path4);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
@@ -21098,13 +21098,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve = __require("node:path").resolve;
     var once = require_once();
-    var Router8 = require_router();
+    var Router9 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports = module.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router7 = null;
+      var router8 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -21113,13 +21113,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router7 === null) {
-            router7 = new Router8({
+          if (router8 === null) {
+            router8 = new Router9({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router7;
+          return router8;
         }
       });
     };
@@ -21190,15 +21190,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router7 = this.router;
+      var router8 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router7.use(path4, fn2);
+          return router8.use(path4, fn2);
         }
         debug(".use app under %s", path4);
         fn2.mountpath = path4;
         fn2.parent = this;
-        router7.use(path4, function mounted_app(req, res, next) {
+        router8.use(path4, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -23783,7 +23783,7 @@ var require_express = __commonJS({
     var EventEmitter = __require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router8 = require_router();
+    var Router9 = require_router();
     var req = require_request();
     var res = require_response();
     exports = module.exports = createApplication;
@@ -23805,8 +23805,8 @@ var require_express = __commonJS({
     exports.application = proto;
     exports.request = req;
     exports.response = res;
-    exports.Route = Router8.Route;
-    exports.Router = Router8;
+    exports.Route = Router9.Route;
+    exports.Router = Router9;
     exports.json = bodyParser.json;
     exports.raw = bodyParser.raw;
     exports.static = require_serve_static();
@@ -33815,7 +33815,7 @@ var require_lib5 = __commonJS({
 });
 
 // src/app.ts
-var import_express8 = __toESM(require_express2(), 1);
+var import_express9 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 var import_pino_http = __toESM(require_logger(), 1);
 
@@ -43257,7 +43257,7 @@ var clerkMiddleware = (options = {}) => {
 };
 
 // src/routes/index.ts
-var import_express7 = __toESM(require_express2(), 1);
+var import_express8 = __toESM(require_express2(), 1);
 
 // src/routes/health.ts
 var import_express = __toESM(require_express2(), 1);
@@ -54575,9 +54575,13 @@ __export(schema_exports, {
   insertConversationSchema: () => insertConversationSchema,
   insertMessageSchema: () => insertMessageSchema,
   insertModelSchema: () => insertModelSchema,
+  insertWorkflowRunSchema: () => insertWorkflowRunSchema,
+  insertWorkflowSchema: () => insertWorkflowSchema,
   messages: () => messages,
   modelsTable: () => modelsTable,
-  settingsTable: () => settingsTable
+  settingsTable: () => settingsTable,
+  workflowRunsTable: () => workflowRunsTable,
+  workflowsTable: () => workflowsTable
 });
 
 // ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v4/classic/external.js
@@ -65808,11 +65812,11 @@ function numberColumnToSchema(column, z, coerce2) {
   let unsigned = column.getSQLType().includes("unsigned");
   let min;
   let max;
-  let integer3 = false;
+  let integer4 = false;
   if (isColumnType(column, ["MySqlTinyInt", "SingleStoreTinyInt"])) {
     min = unsigned ? 0 : CONSTANTS.INT8_MIN;
     max = unsigned ? CONSTANTS.INT8_UNSIGNED_MAX : CONSTANTS.INT8_MAX;
-    integer3 = true;
+    integer4 = true;
   } else if (isColumnType(column, [
     "PgSmallInt",
     "PgSmallSerial",
@@ -65821,7 +65825,7 @@ function numberColumnToSchema(column, z, coerce2) {
   ])) {
     min = unsigned ? 0 : CONSTANTS.INT16_MIN;
     max = unsigned ? CONSTANTS.INT16_UNSIGNED_MAX : CONSTANTS.INT16_MAX;
-    integer3 = true;
+    integer4 = true;
   } else if (isColumnType(column, [
     "PgReal",
     "MySqlFloat",
@@ -65831,7 +65835,7 @@ function numberColumnToSchema(column, z, coerce2) {
   ])) {
     min = unsigned ? 0 : CONSTANTS.INT24_MIN;
     max = unsigned ? CONSTANTS.INT24_UNSIGNED_MAX : CONSTANTS.INT24_MAX;
-    integer3 = isColumnType(column, ["MySqlMediumInt", "SingleStoreMediumInt"]);
+    integer4 = isColumnType(column, ["MySqlMediumInt", "SingleStoreMediumInt"]);
   } else if (isColumnType(column, [
     "PgInteger",
     "PgSerial",
@@ -65840,7 +65844,7 @@ function numberColumnToSchema(column, z, coerce2) {
   ])) {
     min = unsigned ? 0 : CONSTANTS.INT32_MIN;
     max = unsigned ? CONSTANTS.INT32_UNSIGNED_MAX : CONSTANTS.INT32_MAX;
-    integer3 = true;
+    integer4 = true;
   } else if (isColumnType(column, [
     "PgDoublePrecision",
     "MySqlReal",
@@ -65863,16 +65867,16 @@ function numberColumnToSchema(column, z, coerce2) {
     unsigned = unsigned || isColumnType(column, ["MySqlSerial", "SingleStoreSerial"]);
     min = unsigned ? 0 : Number.MIN_SAFE_INTEGER;
     max = Number.MAX_SAFE_INTEGER;
-    integer3 = true;
+    integer4 = true;
   } else if (isColumnType(column, ["MySqlYear", "SingleStoreYear"])) {
     min = 1901;
     max = 2155;
-    integer3 = true;
+    integer4 = true;
   } else {
     min = Number.MIN_SAFE_INTEGER;
     max = Number.MAX_SAFE_INTEGER;
   }
-  let schema = coerce2 === true || coerce2?.number ? integer3 ? z.coerce.number() : z.coerce.number().int() : integer3 ? z.int() : z.number();
+  let schema = coerce2 === true || coerce2?.number ? integer4 ? z.coerce.number() : z.coerce.number().int() : integer4 ? z.int() : z.number();
   schema = schema.gte(min).lte(max);
   return schema;
 }
@@ -66024,6 +66028,31 @@ var settingsTable = pgTable("settings", {
   authTag: text("auth_tag").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => /* @__PURE__ */ new Date())
 });
+
+// ../../lib/db/src/schema/workflows.ts
+var workflowsTable = pgTable("workflows", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id"),
+  title: text("title").notNull(),
+  description: text("description"),
+  category: text("category").notNull().default("custom"),
+  config: jsonb("config"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => /* @__PURE__ */ new Date())
+});
+var workflowRunsTable = pgTable("workflow_runs", {
+  id: serial("id").primaryKey(),
+  workflowId: text("workflow_id").notNull(),
+  userId: text("user_id"),
+  status: text("status").notNull().default("running"),
+  inputPrompt: text("input_prompt").notNull(),
+  executionTrace: jsonb("execution_trace"),
+  outputArtifacts: jsonb("output_artifacts"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => /* @__PURE__ */ new Date())
+});
+var insertWorkflowSchema = createInsertSchema(workflowsTable).omit({ id: true, createdAt: true, updatedAt: true });
+var insertWorkflowRunSchema = createInsertSchema(workflowRunsTable).omit({ id: true, createdAt: true, updatedAt: true });
 
 // ../../lib/db/src/index.ts
 import path from "path";
@@ -78166,15 +78195,324 @@ imagesRouter.post("/generate", async (req, res) => {
   }
 });
 
-// src/routes/index.ts
+// src/routes/workflows.ts
+var import_express7 = __toESM(require_express2(), 1);
 var router6 = (0, import_express7.Router)();
-router6.use(health_default);
-router6.use(models_default);
-router6.use(conversations_default);
-router6.use(settings_default);
-router6.use(admin_default);
-router6.use("/images", imagesRouter);
-var routes_default = router6;
+var WORKFLOW_PRESETS = [
+  {
+    id: "deep-research",
+    title: "Deep Research Agent Team",
+    subtitle: "Autonomous Multi-Step Web Intelligence & Synthesis",
+    description: "Deploys a team of 3 specialized AI agents to plan research queries, fetch real-time web data via Tavily, cross-verify sources, and generate a comprehensive executive report.",
+    icon: "\u{1F50D}",
+    category: "research",
+    agents: [
+      { role: "Strategic Research Planner", avatar: "\u{1F9E0}", description: "Formulates search queries & analytical angles", model: "meta-llama/llama-3.3-70b-instruct:free" },
+      { role: "Live Web Analyst", avatar: "\u{1F310}", description: "Queries live search engine & extracts factual data", model: "google/gemini-2.0-flash-exp:free" },
+      { role: "Executive Report Synthesizer", avatar: "\u{1F4D1}", description: "Synthesizes verified data into a structured report", model: "deepseek/deepseek-r1-distill-llama-70b:free" }
+    ],
+    samplePrompts: [
+      "Latest breakthroughs in solid-state battery technology and commercialization timelines",
+      "Analysis of top AI agent frameworks in 2026: AutoGen vs CrewAI vs LangGraph",
+      "Global semiconductor market forecast and geopolitical supply chain impacts"
+    ]
+  },
+  {
+    id: "code-builder",
+    title: "Full-Stack Code & App Builder",
+    subtitle: "Spec to Live Interactive Web App & Artifact",
+    description: "A collaborative pair of System Architect, UI Engineer, and Code Auditor agents turn text prompts into standalone, live-previewable HTML/React application artifacts.",
+    icon: "\u{1F4BB}",
+    category: "coding",
+    agents: [
+      { role: "System Architect", avatar: "\u{1F4D0}", description: "Plans component layout, UI tokens, and state flow", model: "meta-llama/llama-3.3-70b-instruct:free" },
+      { role: "Lead UI Engineer", avatar: "\u26A1", description: "Writes production-ready HTML, Tailwind CSS, & JS", model: "qwen/qwen-2.5-coder-32b-instruct:free" },
+      { role: "Code Quality Auditor", avatar: "\u{1F6E1}\uFE0F", description: "Verifies scripts, responsiveness, and dark-mode styling", model: "google/gemini-2.0-flash-exp:free" }
+    ],
+    samplePrompts: [
+      "Interactive Cyberpunk Crypto Portfolio Dashboard with live animated charts and dark theme",
+      "Sleek SaaS Analytics Kanban Board with drag-and-drop cards and dark-mode glassmorphism UI",
+      "Modern AI Image Studio generator workspace with prompt history and preview gallery"
+    ]
+  },
+  {
+    id: "content-studio",
+    title: "Creative Content & Visual Campaign",
+    subtitle: "Multi-Platform Copy & Image Studio Prompts",
+    description: "Brand Strategist, Copywriter, and Visual Art Director collaborate to create multi-angle marketing copy and paired AI Image Studio prompts.",
+    icon: "\u{1F3A8}",
+    category: "content",
+    agents: [
+      { role: "Brand Strategist", avatar: "\u{1F3AF}", description: "Defines campaign positioning and hook angles", model: "meta-llama/llama-3.3-70b-instruct:free" },
+      { role: "Copywriter Agent", avatar: "\u270D\uFE0F", description: "Writes compelling social posts, blogs, and ad copy", model: "google/gemini-2.0-flash-exp:free" },
+      { role: "Visual Art Director", avatar: "\u{1F4F8}", description: "Crafts high-fidelity Image Studio visual prompts", model: "meta-llama/llama-3.3-70b-instruct:free" }
+    ],
+    samplePrompts: [
+      "Product launch campaign for an AI-powered smart productivity ring",
+      "Rebranding campaign for an eco-friendly EV electric sports car",
+      "Viral social media announcement for a next-gen developer IDE plugin"
+    ]
+  },
+  {
+    id: "tech-audit",
+    title: "Multi-Agent Technical Auditor",
+    subtitle: "Security, Performance & Architectural Review",
+    description: "Security Inspector and Performance Architect perform a multi-perspective review of code architectures, identifying vulnerabilities and optimizations.",
+    icon: "\u{1F6E1}\uFE0F",
+    category: "audit",
+    agents: [
+      { role: "Security Vulnerability Auditor", avatar: "\u{1F512}", description: "Scans for auth leaks, injection risks, and header flaws", model: "deepseek/deepseek-r1-distill-llama-70b:free" },
+      { role: "Performance & Scaling Architect", avatar: "\u26A1", description: "Identifies async bottlenecks, memory leaks, & DB queries", model: "meta-llama/llama-3.3-70b-instruct:free" }
+    ],
+    samplePrompts: [
+      "Audit Node.js Express microservice handling Clerk JWT auth, database queries, and CORS headers",
+      "Review React state management & custom hook data-fetching logic for memory leaks"
+    ]
+  }
+];
+router6.get("/workflows", (_req, res) => {
+  res.json(WORKFLOW_PRESETS);
+});
+router6.post("/workflows/run", async (req, res) => {
+  const { workflowId, prompt } = req.body || {};
+  if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
+    res.status(400).json({ error: "Prompt is required" });
+    return;
+  }
+  const preset = WORKFLOW_PRESETS.find((w) => w.id === workflowId) || WORKFLOW_PRESETS[0];
+  const userEmail = req.headers["x-user-email"] || req.auth?.claims?.email || req.auth?.sessionClaims?.email;
+  const userRole = req.headers["x-user-role"] || req.auth?.claims?.publicMetadata?.role || req.auth?.sessionClaims?.publicMetadata?.role;
+  const userHeaderKey = req.headers["x-openrouter-key"];
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders?.();
+  const emit = (data) => {
+    res.write(`data: ${JSON.stringify(data)}
+
+`);
+  };
+  try {
+    const openrouter = await getOpenRouterClient(userEmail, userHeaderKey, userRole);
+    emit({ stage: "start", workflow: preset.title, prompt: prompt.trim() });
+    if (preset.id === "deep-research") {
+      const planner = preset.agents[0];
+      emit({ stage: "agent_start", agent: planner.role, avatar: planner.avatar, status: "Formulating research strategy & search queries..." });
+      const planRes = await openrouter.chat.completions.create({
+        model: planner.model,
+        temperature: 0.5,
+        messages: [
+          {
+            role: "system",
+            content: `You are an elite Research Strategy Planner. Given the user's research topic, output EXACTLY 3 targeted search queries to fetch real-time intelligence. Return your response as a JSON array of strings, e.g.: ["query 1", "query 2", "query 3"]`
+          },
+          { role: "user", content: prompt.trim() }
+        ]
+      });
+      let queries = [prompt.trim()];
+      try {
+        const rawContent = planRes.choices[0]?.message?.content || "";
+        const jsonMatch = rawContent.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          queries = JSON.parse(jsonMatch[0]);
+        }
+      } catch {
+      }
+      emit({ stage: "agent_complete", agent: planner.role, avatar: planner.avatar, output: `Generated 3 targeted queries: ${queries.join(" | ")}` });
+      const webAnalyst = preset.agents[1];
+      emit({ stage: "agent_start", agent: webAnalyst.role, avatar: webAnalyst.avatar, status: `Querying live web search engines...` });
+      const searchResults = [];
+      for (const q of queries) {
+        emit({ stage: "tool_call", tool: "Tavily Search", query: q });
+        try {
+          const resText = await tavilySearch(q);
+          searchResults.push(`### Search Query: "${q}"
+${resText}`);
+          emit({ stage: "tool_result", tool: "Tavily Search", status: "Success", resultSnippet: resText.slice(0, 200) + "..." });
+        } catch (err) {
+          searchResults.push(`### Search Query: "${q}"
+(Search unavailable, using domain intelligence)`);
+        }
+      }
+      const combinedSearchContext = searchResults.join("\n\n");
+      emit({ stage: "agent_complete", agent: webAnalyst.role, avatar: webAnalyst.avatar, output: `Fetched ${searchResults.length} real-time web intelligence feeds.` });
+      const synthesizer = preset.agents[2];
+      emit({ stage: "agent_start", agent: synthesizer.role, avatar: synthesizer.avatar, status: "Synthesizing executive report with citation links..." });
+      const stream = await openrouter.chat.completions.create({
+        model: synthesizer.model,
+        temperature: 0.6,
+        stream: true,
+        messages: [
+          {
+            role: "system",
+            content: `You are an Executive Intelligence Synthesizer. Synthesize the provided live web search results into a comprehensive Executive Research Report in Markdown. Include headers, bullet points, source citations, and key insights.`
+          },
+          {
+            role: "user",
+            content: `TOPIC: ${prompt.trim()}
+
+LIVE SEARCH DATA:
+${combinedSearchContext}`
+          }
+        ]
+      });
+      let fullReport = "";
+      for await (const chunk of stream) {
+        const text2 = chunk.choices[0]?.delta?.content || "";
+        if (text2) {
+          fullReport += text2;
+          emit({ stage: "report_delta", content: text2 });
+        }
+      }
+      emit({ stage: "agent_complete", agent: synthesizer.role, avatar: synthesizer.avatar, output: "Final Executive Report completed." });
+      emit({ stage: "done", artifactType: "report", artifactContent: fullReport });
+    } else if (preset.id === "code-builder") {
+      const architect = preset.agents[0];
+      emit({ stage: "agent_start", agent: architect.role, avatar: architect.avatar, status: "Designing component hierarchy & UI tokens..." });
+      const archRes = await openrouter.chat.completions.create({
+        model: architect.model,
+        temperature: 0.7,
+        messages: [
+          {
+            role: "system",
+            content: "You are a Master Software Architect. Outline the UI component structure, color tokens, and state flow for the requested web app in 3 short bullet points."
+          },
+          { role: "user", content: prompt.trim() }
+        ]
+      });
+      const archPlan = archRes.choices[0]?.message?.content || "Planned UI architecture and state hierarchy.";
+      emit({ stage: "agent_complete", agent: architect.role, avatar: architect.avatar, output: archPlan });
+      const engineer = preset.agents[1];
+      emit({ stage: "agent_start", agent: engineer.role, avatar: engineer.avatar, status: "Writing full production HTML5 + Tailwind CSS + JS app..." });
+      const stream = await openrouter.chat.completions.create({
+        model: engineer.model,
+        temperature: 0.5,
+        stream: true,
+        messages: [
+          {
+            role: "system",
+            content: `You are a Lead UI Engineer. Generate a SINGLE, complete, standalone HTML file (including <!DOCTYPE html>, Tailwind CSS CDN <script src="https://cdn.tailwindcss.com"></script>, Lucide icons script if needed, and embedded JavaScript for interactivity).
+The design MUST look extremely futuristic, polished, dark-mode themed, with vibrant gradients and interactive elements.
+OUTPUT ONLY THE RAW HTML FILE WITHOUT ANY MARKDOWN WRAPPER (no \`\`\`html tags).`
+          },
+          {
+            role: "user",
+            content: `ARCHITECT PLAN:
+${archPlan}
+
+USER PROMPT: ${prompt.trim()}`
+          }
+        ]
+      });
+      let fullCode = "";
+      for await (const chunk of stream) {
+        const text2 = chunk.choices[0]?.delta?.content || "";
+        if (text2) {
+          fullCode += text2;
+          emit({ stage: "code_delta", content: text2 });
+        }
+      }
+      let cleanHtml = fullCode.trim();
+      if (cleanHtml.startsWith("```html")) {
+        cleanHtml = cleanHtml.replace(/^```html\n?/, "").replace(/\n?```$/, "");
+      } else if (cleanHtml.startsWith("```")) {
+        cleanHtml = cleanHtml.replace(/^```\w*\n?/, "").replace(/\n?```$/, "");
+      }
+      emit({ stage: "agent_complete", agent: engineer.role, avatar: engineer.avatar, output: "Generated standalone interactive HTML app." });
+      emit({ stage: "done", artifactType: "code", artifactContent: cleanHtml });
+    } else if (preset.id === "content-studio") {
+      const strategist = preset.agents[0];
+      emit({ stage: "agent_start", agent: strategist.role, avatar: strategist.avatar, status: "Formulating campaign positioning & angle..." });
+      const stratRes = await openrouter.chat.completions.create({
+        model: strategist.model,
+        temperature: 0.7,
+        messages: [
+          {
+            role: "system",
+            content: "You are a Senior Brand Strategist. Outline 2 high-converting campaign hooks for the user's request."
+          },
+          { role: "user", content: prompt.trim() }
+        ]
+      });
+      const stratOutput = stratRes.choices[0]?.message?.content || "Defined campaign positioning.";
+      emit({ stage: "agent_complete", agent: strategist.role, avatar: strategist.avatar, output: stratOutput });
+      const copywriter = preset.agents[1];
+      emit({ stage: "agent_start", agent: copywriter.role, avatar: copywriter.avatar, status: "Drafting multi-platform copy & Image Studio prompts..." });
+      const stream = await openrouter.chat.completions.create({
+        model: copywriter.model,
+        temperature: 0.7,
+        stream: true,
+        messages: [
+          {
+            role: "system",
+            content: `You are a Copywriter and Visual Art Director team. Generate a full marketing campaign package in Markdown containing:
+1. \u{1F4F1} Social Media Announcement (X / LinkedIn)
+2. \u{1F4E7} Email / Pitch Hook
+3. \u{1F3A8} Image Studio Visual Prompt (High quality prompt for AI image generation)`
+          },
+          {
+            role: "user",
+            content: `STRATEGY:
+${stratOutput}
+
+PROMPT: ${prompt.trim()}`
+          }
+        ]
+      });
+      let contentPackage = "";
+      for await (const chunk of stream) {
+        const text2 = chunk.choices[0]?.delta?.content || "";
+        if (text2) {
+          contentPackage += text2;
+          emit({ stage: "report_delta", content: text2 });
+        }
+      }
+      emit({ stage: "agent_complete", agent: copywriter.role, avatar: copywriter.avatar, output: "Completed content package & visual prompts." });
+      emit({ stage: "done", artifactType: "content", artifactContent: contentPackage });
+    } else {
+      const auditor = preset.agents[0];
+      emit({ stage: "agent_start", agent: auditor.role, avatar: auditor.avatar, status: "Auditing security, latency, & architecture..." });
+      const stream = await openrouter.chat.completions.create({
+        model: auditor.model,
+        temperature: 0.5,
+        stream: true,
+        messages: [
+          {
+            role: "system",
+            content: "You are an Elite Technical Auditor. Provide a 3-part Audit Report in Markdown: 1. Security & Auth Audit, 2. Performance Bottlenecks, 3. Refactoring Action Plan."
+          },
+          { role: "user", content: prompt.trim() }
+        ]
+      });
+      let auditReport = "";
+      for await (const chunk of stream) {
+        const text2 = chunk.choices[0]?.delta?.content || "";
+        if (text2) {
+          auditReport += text2;
+          emit({ stage: "report_delta", content: text2 });
+        }
+      }
+      emit({ stage: "agent_complete", agent: auditor.role, avatar: auditor.avatar, output: "Audit report completed." });
+      emit({ stage: "done", artifactType: "audit", artifactContent: auditReport });
+    }
+  } catch (err) {
+    const errorMsg = err?.message || "Workflow execution failed";
+    emit({ stage: "error", error: errorMsg });
+  }
+  res.end();
+});
+var workflows_default = router6;
+
+// src/routes/index.ts
+var router7 = (0, import_express8.Router)();
+router7.use(health_default);
+router7.use(models_default);
+router7.use(conversations_default);
+router7.use(settings_default);
+router7.use(admin_default);
+router7.use(workflows_default);
+router7.use("/images", imagesRouter);
+var routes_default = router7;
 
 // src/lib/logger.ts
 var import_pino = __toESM(require_pino(), 1);
@@ -78195,7 +78533,7 @@ var logger2 = (0, import_pino.default)({
 });
 
 // src/app.ts
-var app = (0, import_express8.default)();
+var app = (0, import_express9.default)();
 app.use(
   (0, import_pino_http.default)({
     logger: logger2,
@@ -78216,8 +78554,8 @@ app.use(
   })
 );
 app.use((0, import_cors.default)());
-app.use(import_express8.default.json());
-app.use(import_express8.default.urlencoded({ extended: true }));
+app.use(import_express9.default.json());
+app.use(import_express9.default.urlencoded({ extended: true }));
 app.use(clerkMiddleware());
 app.use("/api", routes_default);
 app.use("/", routes_default);

@@ -653,6 +653,12 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+              <Link href="/workflows">
+                <Button variant="ghost" className="gap-2 rounded-xl text-emerald-400 hover:text-emerald-300 font-medium transition-all hover:bg-emerald-500/10">
+                  <Layers className="h-4 w-4 text-emerald-400" />
+                  Workflows
+                </Button>
+              </Link>
               <Link href="/generate">
                 <Button variant="ghost" className="gap-2 rounded-xl text-muted-foreground hover:text-foreground font-medium transition-all">
                   <Sparkles className="h-4 w-4" />
