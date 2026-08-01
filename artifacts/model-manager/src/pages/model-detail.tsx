@@ -193,9 +193,19 @@ export default function ModelDetail() {
     setActiveConvId(convId);
     localStorage.setItem(`active_conv_${modelId}`, String(convId));
     setMessages([]);
-    // Fetch messages for this conversation
+    // Fetch messages for this conversation with proper user identity headers
     const url = `/api/models/${modelId}/conversations/${convId}/messages`;
-    fetch(url)
+    const headers: Record<string, string> = {};
+    const userEmail = user?.primaryEmailAddress?.emailAddress || (window as any).Clerk?.user?.primaryEmailAddress?.emailAddress;
+    if (userEmail) {
+      headers['x-user-email'] = userEmail;
+    }
+    const localKey = typeof window !== 'undefined' ? localStorage.getItem('openrouter_user_api_key') : null;
+    if (localKey) {
+      headers['x-openrouter-key'] = localKey;
+    }
+
+    fetch(url, { headers })
       .then((r) => r.json())
       .then((msgs) => {
         if (Array.isArray(msgs)) {
@@ -209,7 +219,7 @@ export default function ModelDetail() {
         }
       })
       .catch(() => {});
-  }, [modelId]);
+  }, [modelId, user]);
 
   // Auto-restore / auto-select active conversation on page load or reload
   useEffect(() => {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
+import { useUser } from '@clerk/clerk-react';
 import {
   Sparkles,
   ArrowLeft,
@@ -268,6 +269,7 @@ function ImageCardItem({
 }
 
 export default function ImageStudio() {
+  const { user } = useUser();
   const { toast } = useToast();
   const [prompt, setPrompt] = useState('');
   const [negativePrompt, setNegativePrompt] = useState('');
@@ -372,6 +374,10 @@ export default function ImageStudio() {
       const localKey = typeof window !== 'undefined' ? localStorage.getItem('openrouter_user_api_key') : null;
       if (localKey) {
         headers['x-openrouter-key'] = localKey;
+      }
+      const userEmail = user?.primaryEmailAddress?.emailAddress || (window as any).Clerk?.user?.primaryEmailAddress?.emailAddress;
+      if (userEmail) {
+        headers['x-user-email'] = userEmail;
       }
       const res = await fetch('/api/images/generate', {
         method: 'POST',
