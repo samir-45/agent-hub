@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { MarkdownRenderer } from '@/components/markdown-renderer';
 import { useParams, useLocation, Link } from 'wouter';
+import { useUser } from '@clerk/clerk-react';
 import {
   useGetModel,
   useUpdateModel,
@@ -71,6 +72,7 @@ type Message = {
 export default function ModelDetail() {
   const { id } = useParams<{ id: string }>();
   const modelId = Number(id);
+  const { user } = useUser();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -262,9 +264,9 @@ export default function ModelDetail() {
       if (localKey) {
         headers['x-openrouter-key'] = localKey;
       }
-      const clerkEmail = (window as any).Clerk?.user?.primaryEmailAddress?.emailAddress;
-      if (clerkEmail) {
-        headers['x-user-email'] = clerkEmail;
+      const userEmail = user?.primaryEmailAddress?.emailAddress || (window as any).Clerk?.user?.primaryEmailAddress?.emailAddress;
+      if (userEmail) {
+        headers['x-user-email'] = userEmail;
       }
       const response = await fetch(url, {
         method: 'POST',

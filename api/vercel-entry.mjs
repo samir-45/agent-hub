@@ -77429,7 +77429,7 @@ var router3 = (0, import_express3.Router)();
 function getUserIdentity2(req) {
   const rawEmail = req.headers["x-user-email"] || req.auth?.claims?.email || req.auth?.sessionClaims?.email || req.auth?.email;
   const role = req.headers["x-user-role"] || req.auth?.claims?.publicMetadata?.role || req.auth?.sessionClaims?.publicMetadata?.role;
-  const email3 = rawEmail ? rawEmail.toLowerCase().trim() : "mdmahinkhan851@gmail.com";
+  const email3 = rawEmail ? rawEmail.toLowerCase().trim() : "";
   const userId = req.auth?.userId || email3;
   return { email: email3, role, userId };
 }
@@ -77767,9 +77767,18 @@ router4.get("/settings/openrouter-api-key", async (req, res) => {
     });
   }
 });
+function isReqAdmin(req) {
+  const userEmail = req.headers["x-user-email"] || req.auth?.claims?.email || req.auth?.sessionClaims?.email;
+  const userRole = req.headers["x-user-role"] || req.auth?.claims?.publicMetadata?.role || req.auth?.sessionClaims?.publicMetadata?.role;
+  return userEmail === "mdmahinkhan851@gmail.com" || userRole === "admin";
+}
 var UpsertBody = external_exports.object({ apiKey: external_exports.string().min(1) });
 router4.put("/settings/openrouter-api-key", async (req, res) => {
   try {
+    if (!isReqAdmin(req)) {
+      res.status(403).json({ error: "Only admins can update the system API key" });
+      return;
+    }
     const parsed = UpsertBody.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: "apiKey is required" });
@@ -77788,8 +77797,12 @@ router4.put("/settings/openrouter-api-key", async (req, res) => {
     res.status(500).json({ error: err.message || "Failed to save API key to database" });
   }
 });
-router4.delete("/settings/openrouter-api-key", async (_req, res) => {
+router4.delete("/settings/openrouter-api-key", async (req, res) => {
   try {
+    if (!isReqAdmin(req)) {
+      res.status(403).json({ error: "Only admins can delete the system API key" });
+      return;
+    }
     await db.delete(settingsTable).where(eq(settingsTable.key, SETTING_KEY));
     invalidateApiKeyCache();
     res.json({ success: true });
@@ -77880,7 +77893,7 @@ router5.get("/admin/stats", checkAdmin, async (_req, res) => {
 });
 router5.get("/admin/users", checkAdmin, async (req, res) => {
   try {
-    const reqEmail = req.headers["x-user-email"] || "mdmahinkhan851@gmail.com";
+    const reqEmail = (req.headers["x-user-email"] || req.auth?.claims?.email || req.auth?.sessionClaims?.email || "").toLowerCase().trim();
     const [msgStats] = await db.select({
       totalCount: sql`count(*)::int`,
       totalChars: sql`coalesce(sum(length(content)), 0)::int`

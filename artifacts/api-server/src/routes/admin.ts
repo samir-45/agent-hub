@@ -104,7 +104,7 @@ router.get("/admin/stats", checkAdmin, async (_req, res) => {
 // GET /api/admin/users
 router.get("/admin/users", checkAdmin, async (req, res): Promise<void> => {
   try {
-    const reqEmail = (req.headers["x-user-email"] as string) || "mdmahinkhan851@gmail.com";
+    const reqEmail = ((req.headers["x-user-email"] as string) || (req as any).auth?.claims?.email || (req as any).auth?.sessionClaims?.email || "").toLowerCase().trim();
     const [msgStats] = await db
       .select({
         totalCount: sql<number>`count(*)::int`,

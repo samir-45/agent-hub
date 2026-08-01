@@ -56,11 +56,23 @@ router.get("/settings/openrouter-api-key", async (req, res): Promise<void> => {
   }
 });
 
+// Helper to check if request comes from admin
+function isReqAdmin(req: any): boolean {
+  const userEmail = (req.headers["x-user-email"] as string) || req.auth?.claims?.email || req.auth?.sessionClaims?.email;
+  const userRole = (req.headers["x-user-role"] as string) || req.auth?.claims?.publicMetadata?.role || req.auth?.sessionClaims?.publicMetadata?.role;
+  return userEmail === "mdmahinkhan851@gmail.com" || userRole === "admin";
+}
+
 const UpsertBody = z.object({ apiKey: z.string().min(1) });
 
 // PUT /api/settings/openrouter-api-key
 router.put("/settings/openrouter-api-key", async (req, res): Promise<void> => {
   try {
+    if (!isReqAdmin(req)) {
+      res.status(403).json({ error: "Only admins can update the system API key" });
+      return;
+    }
+
     const parsed = UpsertBody.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: "apiKey is required" });
@@ -88,8 +100,13 @@ router.put("/settings/openrouter-api-key", async (req, res): Promise<void> => {
 });
 
 // DELETE /api/settings/openrouter-api-key
-router.delete("/settings/openrouter-api-key", async (_req, res): Promise<void> => {
+router.delete("/settings/openrouter-api-key", async (req, res): Promise<void> => {
   try {
+    if (!isReqAdmin(req)) {
+      res.status(403).json({ error: "Only admins can delete the system API key" });
+      return;
+    }
+
     await db.delete(settingsTable).where(eq(settingsTable.key, SETTING_KEY));
     invalidateApiKeyCache();
     res.json({ success: true });

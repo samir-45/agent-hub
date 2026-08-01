@@ -32,7 +32,7 @@ function getUserIdentity(req: any) {
     req.auth?.claims?.publicMetadata?.role ||
     req.auth?.sessionClaims?.publicMetadata?.role;
 
-  const email = rawEmail ? rawEmail.toLowerCase().trim() : "mdmahinkhan851@gmail.com";
+  const email = rawEmail ? rawEmail.toLowerCase().trim() : "";
   const userId = req.auth?.userId || email;
 
   return { email, role, userId };
