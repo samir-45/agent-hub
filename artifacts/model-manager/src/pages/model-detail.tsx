@@ -167,16 +167,18 @@ export default function ModelDetail() {
   };
 
   const handleNewConversation = () => {
-    const title = `Chat ${new Date().toLocaleTimeString()}`;
+    const title = `Chat ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     createConversation.mutate(
       { modelId, data: { title } },
       {
         onSuccess: (conv) => {
           queryClient.invalidateQueries({ queryKey: getListModelConversationsQueryKey(modelId) });
           queryClient.invalidateQueries({ queryKey: getGetStatsQueryKey() });
-          setActiveConvId(conv.id);
-          localStorage.setItem(`active_conv_${modelId}`, String(conv.id));
-          setMessages([]);
+          handleSelectConversation(conv.id);
+          setActiveTab('chat');
+          setTimeout(() => {
+            textareaRef.current?.focus();
+          }, 100);
         },
         onError: (err: any) => {
           toast({
