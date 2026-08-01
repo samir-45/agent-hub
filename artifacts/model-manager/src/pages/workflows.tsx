@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { useUser, UserButton } from "@clerk/clerk-react";
+import { useListModels } from "@workspace/api-client-react";
 import {
   Sparkles,
   ArrowLeft,
@@ -36,6 +37,7 @@ interface AgentDef {
   avatar: string;
   description: string;
   model: string;
+  categoryTag?: "reasoning" | "coding" | "fast" | "general";
 }
 
 interface WorkflowPreset {
@@ -58,9 +60,9 @@ const PRESETS: WorkflowPreset[] = [
     icon: "🔍",
     category: "research",
     agents: [
-      { role: "Strategic Research Planner", avatar: "🧠", description: "Formulates search queries & analytical angles", model: "Llama 3.3 70B" },
-      { role: "Live Web Analyst", avatar: "🌐", description: "Queries live search engine & extracts factual data", model: "Gemini 2.0 Flash" },
-      { role: "Executive Report Synthesizer", avatar: "📑", description: "Synthesizes verified data into a structured report", model: "DeepSeek R1 Distill 70B" },
+      { role: "Strategic Research Planner", avatar: "🧠", description: "Formulates search queries & analytical angles", model: "Cockpit Reasoning Model", categoryTag: "reasoning" },
+      { role: "Live Web Analyst", avatar: "🌐", description: "Queries live search engine & extracts factual data", model: "Cockpit Fast Model", categoryTag: "fast" },
+      { role: "Executive Report Synthesizer", avatar: "📑", description: "Synthesizes verified data into a structured report", model: "Cockpit Reasoning Model", categoryTag: "reasoning" },
     ],
     samplePrompts: [
       "Latest breakthroughs in solid-state battery technology and commercialization timelines",
@@ -76,9 +78,9 @@ const PRESETS: WorkflowPreset[] = [
     icon: "💻",
     category: "coding",
     agents: [
-      { role: "System Architect", avatar: "📐", description: "Plans component layout, UI tokens, and state flow", model: "Llama 3.3 70B" },
-      { role: "Lead UI Engineer", avatar: "⚡", description: "Writes production-ready HTML, Tailwind CSS, & JS", model: "Qwen 2.5 Coder 32B" },
-      { role: "Code Quality Auditor", avatar: "🛡️", description: "Verifies scripts, responsiveness, and dark-mode styling", model: "Gemini 2.0 Flash" },
+      { role: "System Architect", avatar: "📐", description: "Plans component layout, UI tokens, and state flow", model: "Cockpit Reasoning Model", categoryTag: "reasoning" },
+      { role: "Lead UI Engineer", avatar: "⚡", description: "Writes production-ready HTML, Tailwind CSS, & JS", model: "Cockpit Coding Model", categoryTag: "coding" },
+      { role: "Code Quality Auditor", avatar: "🛡️", description: "Verifies scripts, responsiveness, and dark-mode styling", model: "Cockpit Fast Model", categoryTag: "fast" },
     ],
     samplePrompts: [
       "Interactive Cyberpunk Crypto Portfolio Dashboard with live animated charts and dark theme",
@@ -94,9 +96,9 @@ const PRESETS: WorkflowPreset[] = [
     icon: "🎨",
     category: "content",
     agents: [
-      { role: "Brand Strategist", avatar: "🎯", description: "Defines campaign positioning and hook angles", model: "Llama 3.3 70B" },
-      { role: "Copywriter Agent", avatar: "✍️", description: "Writes compelling social posts, blogs, and ad copy", model: "Gemini 2.0 Flash" },
-      { role: "Visual Art Director", avatar: "📸", description: "Crafts high-fidelity Image Studio visual prompts", model: "Llama 3.3 70B" },
+      { role: "Brand Strategist", avatar: "🎯", description: "Defines campaign positioning and hook angles", model: "Cockpit Reasoning Model", categoryTag: "reasoning" },
+      { role: "Copywriter Agent", avatar: "✍️", description: "Writes compelling social posts, blogs, and ad copy", model: "Cockpit Fast Model", categoryTag: "fast" },
+      { role: "Visual Art Director", avatar: "📸", description: "Crafts high-fidelity Image Studio visual prompts", model: "Cockpit General Model", categoryTag: "general" },
     ],
     samplePrompts: [
       "Product launch campaign for an AI-powered smart productivity ring",
@@ -112,8 +114,8 @@ const PRESETS: WorkflowPreset[] = [
     icon: "🛡️",
     category: "audit",
     agents: [
-      { role: "Security Vulnerability Auditor", avatar: "🔒", description: "Scans for auth leaks, injection risks, and header flaws", model: "DeepSeek R1 Distill 70B" },
-      { role: "Performance & Scaling Architect", avatar: "⚡", description: "Identifies async bottlenecks, memory leaks, & DB queries", model: "Llama 3.3 70B" },
+      { role: "Security Vulnerability Auditor", avatar: "🔒", description: "Scans for auth leaks, injection risks, and header flaws", model: "Cockpit Reasoning Model", categoryTag: "reasoning" },
+      { role: "Performance & Scaling Architect", avatar: "⚡", description: "Identifies async bottlenecks, memory leaks, & DB queries", model: "Cockpit Coding Model", categoryTag: "coding" },
     ],
     samplePrompts: [
       "Audit Node.js Express microservice handling Clerk JWT auth, database queries, and CORS headers",
@@ -121,6 +123,39 @@ const PRESETS: WorkflowPreset[] = [
     ],
   },
 ];
+
+function getAssignedModelName(categoryTag: string | undefined, userModels: any[] = []) {
+  if (!userModels || userModels.length === 0) return "Cockpit Model";
+
+  const normalized = userModels.map((m: any) => ({
+    ...m,
+    idStr: ((m.modelId || "") + " " + (m.name || "")).toLowerCase(),
+  }));
+
+  if (categoryTag === "coding") {
+    const match = normalized.find((m) => /coder|code|qwen|claude|gpt-4|sonnet|deepseek|dev|ultra|nemotron/.test(m.idStr));
+    if (match) return match.name;
+  } else if (categoryTag === "reasoning") {
+    const match = normalized.find((m) => /r1|reason|llama-3|o1|o3|deepseek|claude|architect|gpt-4|ultra|nemotron/.test(m.idStr));
+    if (match) return match.name;
+  } else if (categoryTag === "fast") {
+    const match = normalized.find((m) => /flash|mini|turbo|instant|haiku|speed|fast|gemini|ling/.test(m.idStr));
+    if (match) return match.name;
+  }
+
+  return userModels[0]?.name || "Cockpit Model";
+}
+
+function cleanHtmlForIframe(content: string): string {
+  if (!content) return "";
+  let clean = content.trim();
+  clean = clean.replace(/^```[a-z]*\s*/gi, "").replace(/\s*```$/gi, "").trim();
+  const htmlMatch = clean.match(/<!DOCTYPE html[\s\S]*<\/html>/i) || clean.match(/<html[\s\S]*<\/html>/i);
+  if (htmlMatch) {
+    return htmlMatch[0];
+  }
+  return clean;
+}
 
 interface TraceStep {
   id: string;
@@ -137,6 +172,7 @@ interface TraceStep {
 export default function AgentWorkflowsPage() {
   const { user } = useUser();
   const { toast } = useToast();
+  const { data: userModels = [] } = useListModels();
 
   const [selectedPreset, setSelectedPreset] = useState<WorkflowPreset>(PRESETS[0]);
   const [inputPrompt, setInputPrompt] = useState("");
@@ -234,58 +270,75 @@ export default function AgentWorkflowsPage() {
           const trimmed = line.trim();
           if (!trimmed.startsWith("data: ")) continue;
 
+          let event: any = null;
           try {
-            const event = JSON.parse(trimmed.slice(6));
+            event = JSON.parse(trimmed.slice(6));
+          } catch {
+            continue;
+          }
 
-            if (event.stage === "agent_start") {
-              addTrace({
-                stage: "agent_start",
-                agent: event.agent,
-                avatar: event.avatar,
-                status: event.status,
-              });
-            } else if (event.stage === "tool_call") {
-              addTrace({
-                stage: "tool_call",
-                tool: event.tool,
-                query: event.query,
-                status: `Executing tool request...`,
-              });
-            } else if (event.stage === "tool_result") {
-              addTrace({
-                stage: "tool_result",
-                tool: event.tool,
-                output: event.resultSnippet,
-              });
-            } else if (event.stage === "agent_complete") {
-              addTrace({
-                stage: "agent_complete",
-                agent: event.agent,
-                avatar: event.avatar,
-                output: event.output,
-              });
-            } else if (event.stage === "report_delta" || event.stage === "code_delta") {
-              setArtifactContent((prev) => prev + event.content);
-            } else if (event.stage === "done") {
-              setArtifactType(event.artifactType || "report");
-              addTrace({
-                stage: "done",
-                status: "Workflow execution completed successfully!",
-              });
-              if (event.artifactType === "code") {
-                setActiveTab("preview");
-              } else {
-                setActiveTab("artifact");
-              }
-              toast({
-                title: "Workflow Completed",
-                description: `${selectedPreset.title} finished generating final artifact.`,
-              });
-            } else if (event.stage === "error") {
-              throw new Error(event.error);
+          if (event.stage === "error") {
+            addTrace({
+              stage: "error",
+              status: `Execution Error: ${event.error}`,
+            });
+            toast({
+              title: "Workflow Execution Error",
+              description: event.error,
+              variant: "destructive",
+            });
+            setIsRunning(false);
+            return;
+          }
+
+          if (event.stage === "agent_start") {
+            addTrace({
+              stage: "agent_start",
+              agent: event.agent,
+              avatar: event.avatar,
+              status: event.status,
+            });
+          } else if (event.stage === "tool_call") {
+            addTrace({
+              stage: "tool_call",
+              tool: event.tool,
+              query: event.query,
+              status: `Executing tool request...`,
+            });
+          } else if (event.stage === "tool_result") {
+            addTrace({
+              stage: "tool_result",
+              tool: event.tool,
+              output: event.resultSnippet,
+            });
+          } else if (event.stage === "agent_complete") {
+            addTrace({
+              stage: "agent_complete",
+              agent: event.agent,
+              avatar: event.avatar,
+              output: event.output,
+            });
+          } else if (event.stage === "report_delta" || event.stage === "code_delta") {
+            setArtifactContent((prev) => prev + event.content);
+          } else if (event.stage === "done") {
+            const finalType = event.artifactType || "report";
+            setArtifactType(finalType);
+            if (event.artifactContent) {
+              setArtifactContent(cleanHtmlForIframe(event.artifactContent));
             }
-          } catch (jsonErr: any) {
-            // Ignore JSON parse errors for incomplete chunks
+            addTrace({
+              stage: "done",
+              status: "Workflow execution completed successfully!",
+            });
+            if (finalType === "code") {
+              setActiveTab("preview");
+            } else {
+              setActiveTab("artifact");
+            }
+            toast({
+              title: "Workflow Completed",
+              description: `${selectedPreset.title} finished generating final artifact.`,
+            });
           }
         }
       }
@@ -349,7 +402,37 @@ export default function AgentWorkflowsPage() {
       </header>
 
       {/* Main Body */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6 flex flex-col gap-6">
+      <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+        {/* Cockpit Models Active Banner */}
+        {userModels.length === 0 ? (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-center justify-between gap-4 text-amber-300 text-xs">
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="h-4 w-4 text-amber-400 shrink-0" />
+              <span>No active models found in your Cockpit. Please add your models via <strong>Add Model</strong> to power Agent Workflows.</span>
+            </div>
+            <Link href="/models/new">
+              <Button size="sm" variant="outline" className="border-amber-500/40 text-amber-300 hover:bg-amber-500/20 text-xs rounded-xl h-8">
+                + Add Model
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl px-4 py-2.5 flex items-center justify-between gap-4 text-emerald-300 text-xs font-mono">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span>Dynamic Routing Engine Active: Orchestrating across <strong>{userModels.length} Cockpit Model{userModels.length !== 1 ? 's' : ''}</strong></span>
+            </div>
+            <Link href="/models/new">
+              <Button size="sm" variant="ghost" className="text-emerald-400 hover:text-emerald-300 text-[11px] h-7 px-2">
+                Manage Models →
+              </Button>
+            </Link>
+          </div>
+        )}
+
         {/* Preset Selector Header */}
         <div className="space-y-2">
           <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
@@ -388,7 +471,7 @@ export default function AgentWorkflowsPage() {
                 </p>
                 <div className="flex items-center gap-1.5 pt-1">
                   {preset.agents.map((ag, i) => (
-                    <span key={i} className="text-xs bg-muted/70 px-1.5 py-0.5 rounded-lg text-muted-foreground" title={`${ag.role} (${ag.model})`}>
+                    <span key={i} className="text-xs bg-muted/70 px-1.5 py-0.5 rounded-lg text-muted-foreground" title={`${ag.role} (${getAssignedModelName(ag.categoryTag, userModels)})`}>
                       {ag.avatar}
                     </span>
                   ))}
@@ -417,7 +500,7 @@ export default function AgentWorkflowsPage() {
                     <span>{agent.avatar}</span>
                     <span className="font-semibold text-foreground">{agent.role}:</span>
                     <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/40 text-emerald-400 bg-emerald-500/5 px-1.5 py-0">
-                      {agent.model}
+                      {getAssignedModelName(agent.categoryTag, userModels)}
                     </Badge>
                   </div>
                 ))}
@@ -428,25 +511,11 @@ export default function AgentWorkflowsPage() {
               value={inputPrompt}
               onChange={(e) => setInputPrompt(e.target.value)}
               placeholder={`Describe your goal for the ${selectedPreset.title}... (e.g. "${selectedPreset.samplePrompts[0]}")`}
-              className="resize-none min-h-[90px] bg-muted/40 border-border/50 focus-visible:ring-emerald-500/40 rounded-xl text-sm leading-relaxed"
+              className="resize-y min-h-[90px] max-h-[500px] bg-muted/40 border-border/50 focus-visible:ring-emerald-500/40 rounded-xl text-sm leading-relaxed"
               rows={3}
             />
 
-            {/* Quick Sample Prompts */}
-            <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-[11px] text-muted-foreground font-mono">Sample Ideas:</span>
-              {selectedPreset.samplePrompts.map((prompt, idx) => (
-                <Button
-                  key={idx}
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setInputPrompt(prompt)}
-                  className="h-6 text-[11px] px-2.5 rounded-lg bg-muted/40 hover:bg-emerald-500/10 text-muted-foreground hover:text-emerald-400 border border-border/30 truncate max-w-xs"
-                >
-                  {prompt}
-                </Button>
-              ))}
-            </div>
+
 
             <div className="flex justify-end pt-1">
               <Button
@@ -541,8 +610,21 @@ export default function AgentWorkflowsPage() {
               {/* Tab 3: Interactive HTML / React Code Sandbox Preview */}
               {artifactType === "code" && (
                 <TabsContent value="preview" className="p-4 mt-0 min-h-[450px]">
-                  <div className="w-full h-[550px] rounded-xl overflow-hidden border border-border/40 bg-white">
-                    <iframe ref={iframeRef} title="Workflow App Preview" className="w-full h-full border-0" sandbox="allow-scripts allow-modals allow-forms allow-popups" />
+                  <div className="w-full h-[600px] rounded-xl overflow-hidden border border-border/40 bg-slate-950 shadow-inner">
+                    {artifactContent ? (
+                      <iframe
+                        ref={iframeRef}
+                        srcDoc={cleanHtmlForIframe(artifactContent)}
+                        title="Workflow App Preview"
+                        className="w-full h-full border-0 bg-slate-950"
+                        sandbox="allow-scripts allow-modals allow-forms allow-popups allow-same-origin"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-xs space-y-2">
+                        <Loader2 className="h-6 w-6 animate-spin text-emerald-400" />
+                        <p>Compiling live app preview...</p>
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
               )}

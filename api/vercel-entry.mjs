@@ -77392,12 +77392,12 @@ async function getOpenRouterApiKey(userEmail, userHeaderKey, userRole) {
       }
     } catch {
     }
-    if (process.env.OPENROUTER_API_KEY) {
-      return process.env.OPENROUTER_API_KEY;
-    }
+  }
+  if (process.env.OPENROUTER_API_KEY) {
+    return process.env.OPENROUTER_API_KEY;
   }
   throw new Error(
-    "Security Policy: OpenRouter API Key Required. Non-admin users must pair their own OpenRouter API key (sk-or-v1-...) in Settings."
+    "OpenRouter API Key Required. Please pair your OpenRouter API Key in the top header or Settings."
   );
 }
 function invalidateApiKeyCache() {
@@ -78203,13 +78203,13 @@ var WORKFLOW_PRESETS = [
     id: "deep-research",
     title: "Deep Research Agent Team",
     subtitle: "Autonomous Multi-Step Web Intelligence & Synthesis",
-    description: "Deploys a team of 3 specialized AI agents to plan research queries, fetch real-time web data via Tavily, cross-verify sources, and generate a comprehensive executive report.",
+    description: "Deploys 3 specialized AI agents to plan research queries, fetch real-time web data via Tavily, cross-verify sources, and generate a comprehensive executive report.",
     icon: "\u{1F50D}",
     category: "research",
     agents: [
-      { role: "Strategic Research Planner", avatar: "\u{1F9E0}", description: "Formulates search queries & analytical angles", model: "meta-llama/llama-3.3-70b-instruct:free" },
-      { role: "Live Web Analyst", avatar: "\u{1F310}", description: "Queries live search engine & extracts factual data", model: "google/gemini-2.0-flash-exp:free" },
-      { role: "Executive Report Synthesizer", avatar: "\u{1F4D1}", description: "Synthesizes verified data into a structured report", model: "deepseek/deepseek-r1-distill-llama-70b:free" }
+      { role: "Strategic Research Planner", avatar: "\u{1F9E0}", description: "Formulates search queries & analytical angles", model: "Cockpit Reasoning Model", categoryTag: "reasoning" },
+      { role: "Live Web Analyst", avatar: "\u{1F310}", description: "Queries live search engine & extracts factual data", model: "Cockpit Fast Model", categoryTag: "fast" },
+      { role: "Executive Report Synthesizer", avatar: "\u{1F4D1}", description: "Synthesizes verified data into a structured report", model: "Cockpit Reasoning Model", categoryTag: "reasoning" }
     ],
     samplePrompts: [
       "Latest breakthroughs in solid-state battery technology and commercialization timelines",
@@ -78221,17 +78221,17 @@ var WORKFLOW_PRESETS = [
     id: "code-builder",
     title: "Full-Stack Code & App Builder",
     subtitle: "Spec to Live Interactive Web App & Artifact",
-    description: "A collaborative pair of System Architect, UI Engineer, and Code Auditor agents turn text prompts into standalone, live-previewable HTML/React application artifacts.",
+    description: "Architect, UI Engineer, and Code Auditor agents collaborate to turn text prompts into standalone, live-previewable HTML/React application artifacts.",
     icon: "\u{1F4BB}",
     category: "coding",
     agents: [
-      { role: "System Architect", avatar: "\u{1F4D0}", description: "Plans component layout, UI tokens, and state flow", model: "meta-llama/llama-3.3-70b-instruct:free" },
-      { role: "Lead UI Engineer", avatar: "\u26A1", description: "Writes production-ready HTML, Tailwind CSS, & JS", model: "qwen/qwen-2.5-coder-32b-instruct:free" },
-      { role: "Code Quality Auditor", avatar: "\u{1F6E1}\uFE0F", description: "Verifies scripts, responsiveness, and dark-mode styling", model: "google/gemini-2.0-flash-exp:free" }
+      { role: "System Architect", avatar: "\u{1F4D0}", description: "Plans component layout, UI tokens, and state flow", model: "Cockpit Reasoning Model", categoryTag: "reasoning" },
+      { role: "Lead UI Engineer", avatar: "\u26A1", description: "Writes production-ready HTML, Tailwind CSS, & JS", model: "Cockpit Coding Model", categoryTag: "coding" },
+      { role: "Code Quality Auditor", avatar: "\u{1F6E1}\uFE0F", description: "Verifies scripts, responsiveness, and dark-mode styling", model: "Cockpit Fast Model", categoryTag: "fast" }
     ],
     samplePrompts: [
       "Interactive Cyberpunk Crypto Portfolio Dashboard with live animated charts and dark theme",
-      "Sleek SaaS Analytics Kanban Board with drag-and-drop cards and dark-mode glassmorphism UI",
+      "Sleek SaaS Analytics Kanban Board with drag-and-drop cards and dark-mode glassmorphic UI",
       "Modern AI Image Studio generator workspace with prompt history and preview gallery"
     ]
   },
@@ -78243,9 +78243,9 @@ var WORKFLOW_PRESETS = [
     icon: "\u{1F3A8}",
     category: "content",
     agents: [
-      { role: "Brand Strategist", avatar: "\u{1F3AF}", description: "Defines campaign positioning and hook angles", model: "meta-llama/llama-3.3-70b-instruct:free" },
-      { role: "Copywriter Agent", avatar: "\u270D\uFE0F", description: "Writes compelling social posts, blogs, and ad copy", model: "google/gemini-2.0-flash-exp:free" },
-      { role: "Visual Art Director", avatar: "\u{1F4F8}", description: "Crafts high-fidelity Image Studio visual prompts", model: "meta-llama/llama-3.3-70b-instruct:free" }
+      { role: "Brand Strategist", avatar: "\u{1F3AF}", description: "Defines campaign positioning and hook angles", model: "Cockpit Reasoning Model", categoryTag: "reasoning" },
+      { role: "Copywriter Agent", avatar: "\u270D\uFE0F", description: "Writes compelling social posts, blogs, and ad copy", model: "Cockpit Fast Model", categoryTag: "fast" },
+      { role: "Visual Art Director", avatar: "\u{1F4F8}", description: "Crafts high-fidelity Image Studio visual prompts", model: "Cockpit General Model", categoryTag: "general" }
     ],
     samplePrompts: [
       "Product launch campaign for an AI-powered smart productivity ring",
@@ -78261,8 +78261,8 @@ var WORKFLOW_PRESETS = [
     icon: "\u{1F6E1}\uFE0F",
     category: "audit",
     agents: [
-      { role: "Security Vulnerability Auditor", avatar: "\u{1F512}", description: "Scans for auth leaks, injection risks, and header flaws", model: "deepseek/deepseek-r1-distill-llama-70b:free" },
-      { role: "Performance & Scaling Architect", avatar: "\u26A1", description: "Identifies async bottlenecks, memory leaks, & DB queries", model: "meta-llama/llama-3.3-70b-instruct:free" }
+      { role: "Security Vulnerability Auditor", avatar: "\u{1F512}", description: "Scans for auth leaks, injection risks, and header flaws", model: "Cockpit Reasoning Model", categoryTag: "reasoning" },
+      { role: "Performance & Scaling Architect", avatar: "\u26A1", description: "Identifies async bottlenecks, memory leaks, & DB queries", model: "Cockpit Coding Model", categoryTag: "coding" }
     ],
     samplePrompts: [
       "Audit Node.js Express microservice handling Clerk JWT auth, database queries, and CORS headers",
@@ -78270,9 +78270,128 @@ var WORKFLOW_PRESETS = [
     ]
   }
 ];
+async function selectBestCockpitModel(userEmail, preferredCategory) {
+  let userModels = [];
+  try {
+    if (userEmail) {
+      userModels = await db.select().from(modelsTable).where(and(eq(modelsTable.enabled, true), eq(modelsTable.userId, userEmail)));
+    }
+  } catch {
+  }
+  if (userModels.length === 0) {
+    try {
+      userModels = await db.select().from(modelsTable).where(eq(modelsTable.enabled, true));
+    } catch {
+    }
+  }
+  if (userModels.length === 0) {
+    throw new Error(
+      "No active models found in your Cockpit. Please add models to your Cockpit (via 'Add Model') to power Agent Workflows."
+    );
+  }
+  const normalized = userModels.map((m) => ({
+    ...m,
+    idStr: ((m.modelId || "") + " " + (m.name || "")).toLowerCase()
+  }));
+  if (preferredCategory === "coding") {
+    const match2 = normalized.find((m) => /coder|code|qwen|claude|gpt-4|sonnet|deepseek|dev|ultra|nemotron/.test(m.idStr));
+    if (match2) return { modelId: match2.modelId, name: match2.name };
+  } else if (preferredCategory === "reasoning") {
+    const match2 = normalized.find((m) => /r1|reason|llama-3|o1|o3|deepseek|claude|architect|gpt-4|ultra|nemotron/.test(m.idStr));
+    if (match2) return { modelId: match2.modelId, name: match2.name };
+  } else if (preferredCategory === "fast") {
+    const match2 = normalized.find((m) => /flash|mini|turbo|instant|haiku|speed|fast|gemini|ling/.test(m.idStr));
+    if (match2) return { modelId: match2.modelId, name: match2.name };
+  }
+  const first = userModels[0];
+  return { modelId: first.modelId, name: first.name };
+}
 router6.get("/workflows", (_req, res) => {
   res.json(WORKFLOW_PRESETS);
 });
+function withTimeout(promise2, ms, errorMessage) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(errorMessage)), ms);
+    promise2.then((res) => {
+      clearTimeout(timer);
+      resolve(res);
+    }).catch((err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+  });
+}
+async function callOpenRouterWithFallback(openrouter, primaryModel, messages2, temperature = 0.7, onModelAttempt) {
+  const candidateModels = Array.from(
+    /* @__PURE__ */ new Set([
+      primaryModel,
+      primaryModel.replace(":free", ""),
+      "google/gemini-2.0-flash-001",
+      "deepseek/deepseek-chat",
+      "meta-llama/llama-3.3-70b-instruct",
+      "qwen/qwen-2.5-coder-32b-instruct",
+      "google/gemini-2.0-flash-exp:free",
+      "meta-llama/llama-3.3-70b-instruct:free"
+    ])
+  );
+  let lastError = null;
+  for (const model of candidateModels) {
+    try {
+      if (onModelAttempt) onModelAttempt(model);
+      const res = await withTimeout(
+        openrouter.chat.completions.create({
+          model,
+          temperature,
+          messages: messages2
+        }),
+        15e3,
+        `Model ${model} timed out after 15 seconds`
+      );
+      if (res && res.choices && res.choices[0]?.message) {
+        return res;
+      }
+    } catch (err) {
+      lastError = err;
+      console.warn(`Model ${model} failed/timed out in workflow, retrying next candidate:`, err?.message || err);
+    }
+  }
+  throw lastError || new Error("All fallback model candidates failed.");
+}
+async function streamOpenRouterWithFallback(openrouter, primaryModel, messages2, temperature = 0.7, onModelAttempt) {
+  const candidateModels = Array.from(
+    /* @__PURE__ */ new Set([
+      primaryModel,
+      primaryModel.replace(":free", ""),
+      "google/gemini-2.0-flash-001",
+      "deepseek/deepseek-chat",
+      "meta-llama/llama-3.3-70b-instruct",
+      "qwen/qwen-2.5-coder-32b-instruct",
+      "google/gemini-2.0-flash-exp:free",
+      "meta-llama/llama-3.3-70b-instruct:free"
+    ])
+  );
+  let lastError = null;
+  for (const model of candidateModels) {
+    try {
+      if (onModelAttempt) onModelAttempt(model);
+      const stream = await withTimeout(
+        openrouter.chat.completions.create({
+          model,
+          temperature,
+          messages: messages2,
+          stream: true
+        }),
+        15e3,
+        `Stream connection to ${model} timed out after 15 seconds`
+      );
+      return stream;
+    } catch (err) {
+      lastError = err;
+      console.warn(`Streaming model ${model} failed/timed out in workflow, retrying next candidate:`, err?.message || err);
+    }
+  }
+  throw lastError || new Error("All fallback model candidates failed.");
+}
 router6.post("/workflows/run", async (req, res) => {
   const { workflowId, prompt } = req.body || {};
   if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
@@ -78297,18 +78416,20 @@ router6.post("/workflows/run", async (req, res) => {
     emit({ stage: "start", workflow: preset.title, prompt: prompt.trim() });
     if (preset.id === "deep-research") {
       const planner = preset.agents[0];
-      emit({ stage: "agent_start", agent: planner.role, avatar: planner.avatar, status: "Formulating research strategy & search queries..." });
-      const planRes = await openrouter.chat.completions.create({
-        model: planner.model,
-        temperature: 0.5,
-        messages: [
+      const plannerModel = await selectBestCockpitModel(userEmail, planner.categoryTag || "reasoning");
+      emit({ stage: "agent_start", agent: planner.role, avatar: planner.avatar, status: `Formulating strategy with ${plannerModel.name}...` });
+      const planRes = await callOpenRouterWithFallback(
+        openrouter,
+        plannerModel.modelId,
+        [
           {
             role: "system",
             content: `You are an elite Research Strategy Planner. Given the user's research topic, output EXACTLY 3 targeted search queries to fetch real-time intelligence. Return your response as a JSON array of strings, e.g.: ["query 1", "query 2", "query 3"]`
           },
           { role: "user", content: prompt.trim() }
-        ]
-      });
+        ],
+        0.5
+      );
       let queries = [prompt.trim()];
       try {
         const rawContent = planRes.choices[0]?.message?.content || "";
@@ -78337,12 +78458,12 @@ ${resText}`);
       const combinedSearchContext = searchResults.join("\n\n");
       emit({ stage: "agent_complete", agent: webAnalyst.role, avatar: webAnalyst.avatar, output: `Fetched ${searchResults.length} real-time web intelligence feeds.` });
       const synthesizer = preset.agents[2];
-      emit({ stage: "agent_start", agent: synthesizer.role, avatar: synthesizer.avatar, status: "Synthesizing executive report with citation links..." });
-      const stream = await openrouter.chat.completions.create({
-        model: synthesizer.model,
-        temperature: 0.6,
-        stream: true,
-        messages: [
+      const synthModel = await selectBestCockpitModel(userEmail, synthesizer.categoryTag || "reasoning");
+      emit({ stage: "agent_start", agent: synthesizer.role, avatar: synthesizer.avatar, status: `Synthesizing executive report with ${synthModel.name}...` });
+      const stream = await streamOpenRouterWithFallback(
+        openrouter,
+        synthModel.modelId,
+        [
           {
             role: "system",
             content: `You are an Executive Intelligence Synthesizer. Synthesize the provided live web search results into a comprehensive Executive Research Report in Markdown. Include headers, bullet points, source citations, and key insights.`
@@ -78354,8 +78475,9 @@ ${resText}`);
 LIVE SEARCH DATA:
 ${combinedSearchContext}`
           }
-        ]
-      });
+        ],
+        0.6
+      );
       let fullReport = "";
       for await (const chunk of stream) {
         const text2 = chunk.choices[0]?.delta?.content || "";
@@ -78368,27 +78490,29 @@ ${combinedSearchContext}`
       emit({ stage: "done", artifactType: "report", artifactContent: fullReport });
     } else if (preset.id === "code-builder") {
       const architect = preset.agents[0];
-      emit({ stage: "agent_start", agent: architect.role, avatar: architect.avatar, status: "Designing component hierarchy & UI tokens..." });
-      const archRes = await openrouter.chat.completions.create({
-        model: architect.model,
-        temperature: 0.7,
-        messages: [
+      const archModel = await selectBestCockpitModel(userEmail, architect.categoryTag || "reasoning");
+      emit({ stage: "agent_start", agent: architect.role, avatar: architect.avatar, status: `Designing architecture with ${archModel.name}...` });
+      const archRes = await callOpenRouterWithFallback(
+        openrouter,
+        archModel.modelId,
+        [
           {
             role: "system",
             content: "You are a Master Software Architect. Outline the UI component structure, color tokens, and state flow for the requested web app in 3 short bullet points."
           },
           { role: "user", content: prompt.trim() }
-        ]
-      });
+        ],
+        0.7
+      );
       const archPlan = archRes.choices[0]?.message?.content || "Planned UI architecture and state hierarchy.";
       emit({ stage: "agent_complete", agent: architect.role, avatar: architect.avatar, output: archPlan });
       const engineer = preset.agents[1];
-      emit({ stage: "agent_start", agent: engineer.role, avatar: engineer.avatar, status: "Writing full production HTML5 + Tailwind CSS + JS app..." });
-      const stream = await openrouter.chat.completions.create({
-        model: engineer.model,
-        temperature: 0.5,
-        stream: true,
-        messages: [
+      const engModel = await selectBestCockpitModel(userEmail, engineer.categoryTag || "coding");
+      emit({ stage: "agent_start", agent: engineer.role, avatar: engineer.avatar, status: `Building web app with ${engModel.name}...` });
+      const stream = await streamOpenRouterWithFallback(
+        openrouter,
+        engModel.modelId,
+        [
           {
             role: "system",
             content: `You are a Lead UI Engineer. Generate a SINGLE, complete, standalone HTML file (including <!DOCTYPE html>, Tailwind CSS CDN <script src="https://cdn.tailwindcss.com"></script>, Lucide icons script if needed, and embedded JavaScript for interactivity).
@@ -78402,8 +78526,9 @@ ${archPlan}
 
 USER PROMPT: ${prompt.trim()}`
           }
-        ]
-      });
+        ],
+        0.5
+      );
       let fullCode = "";
       for await (const chunk of stream) {
         const text2 = chunk.choices[0]?.delta?.content || "";
@@ -78413,36 +78538,38 @@ USER PROMPT: ${prompt.trim()}`
         }
       }
       let cleanHtml = fullCode.trim();
-      if (cleanHtml.startsWith("```html")) {
-        cleanHtml = cleanHtml.replace(/^```html\n?/, "").replace(/\n?```$/, "");
-      } else if (cleanHtml.startsWith("```")) {
-        cleanHtml = cleanHtml.replace(/^```\w*\n?/, "").replace(/\n?```$/, "");
+      cleanHtml = cleanHtml.replace(/^```[a-z]*\s*/gi, "").replace(/\s*```$/gi, "").trim();
+      const htmlMatch = cleanHtml.match(/<!DOCTYPE html[\s\S]*<\/html>/i) || cleanHtml.match(/<html[\s\S]*<\/html>/i);
+      if (htmlMatch) {
+        cleanHtml = htmlMatch[0];
       }
       emit({ stage: "agent_complete", agent: engineer.role, avatar: engineer.avatar, output: "Generated standalone interactive HTML app." });
       emit({ stage: "done", artifactType: "code", artifactContent: cleanHtml });
     } else if (preset.id === "content-studio") {
       const strategist = preset.agents[0];
-      emit({ stage: "agent_start", agent: strategist.role, avatar: strategist.avatar, status: "Formulating campaign positioning & angle..." });
-      const stratRes = await openrouter.chat.completions.create({
-        model: strategist.model,
-        temperature: 0.7,
-        messages: [
+      const stratModel = await selectBestCockpitModel(userEmail, strategist.categoryTag || "reasoning");
+      emit({ stage: "agent_start", agent: strategist.role, avatar: strategist.avatar, status: `Formulating positioning with ${stratModel.name}...` });
+      const stratRes = await callOpenRouterWithFallback(
+        openrouter,
+        stratModel.modelId,
+        [
           {
             role: "system",
             content: "You are a Senior Brand Strategist. Outline 2 high-converting campaign hooks for the user's request."
           },
           { role: "user", content: prompt.trim() }
-        ]
-      });
+        ],
+        0.7
+      );
       const stratOutput = stratRes.choices[0]?.message?.content || "Defined campaign positioning.";
       emit({ stage: "agent_complete", agent: strategist.role, avatar: strategist.avatar, output: stratOutput });
       const copywriter = preset.agents[1];
-      emit({ stage: "agent_start", agent: copywriter.role, avatar: copywriter.avatar, status: "Drafting multi-platform copy & Image Studio prompts..." });
-      const stream = await openrouter.chat.completions.create({
-        model: copywriter.model,
-        temperature: 0.7,
-        stream: true,
-        messages: [
+      const copyModel = await selectBestCockpitModel(userEmail, copywriter.categoryTag || "fast");
+      emit({ stage: "agent_start", agent: copywriter.role, avatar: copywriter.avatar, status: `Drafting content with ${copyModel.name}...` });
+      const stream = await streamOpenRouterWithFallback(
+        openrouter,
+        copyModel.modelId,
+        [
           {
             role: "system",
             content: `You are a Copywriter and Visual Art Director team. Generate a full marketing campaign package in Markdown containing:
@@ -78457,8 +78584,9 @@ ${stratOutput}
 
 PROMPT: ${prompt.trim()}`
           }
-        ]
-      });
+        ],
+        0.7
+      );
       let contentPackage = "";
       for await (const chunk of stream) {
         const text2 = chunk.choices[0]?.delta?.content || "";
@@ -78471,19 +78599,20 @@ PROMPT: ${prompt.trim()}`
       emit({ stage: "done", artifactType: "content", artifactContent: contentPackage });
     } else {
       const auditor = preset.agents[0];
-      emit({ stage: "agent_start", agent: auditor.role, avatar: auditor.avatar, status: "Auditing security, latency, & architecture..." });
-      const stream = await openrouter.chat.completions.create({
-        model: auditor.model,
-        temperature: 0.5,
-        stream: true,
-        messages: [
+      const auditModel = await selectBestCockpitModel(userEmail, auditor.categoryTag || "reasoning");
+      emit({ stage: "agent_start", agent: auditor.role, avatar: auditor.avatar, status: `Auditing code architecture with ${auditModel.name}...` });
+      const stream = await streamOpenRouterWithFallback(
+        openrouter,
+        auditModel.modelId,
+        [
           {
             role: "system",
             content: "You are an Elite Technical Auditor. Provide a 3-part Audit Report in Markdown: 1. Security & Auth Audit, 2. Performance Bottlenecks, 3. Refactoring Action Plan."
           },
           { role: "user", content: prompt.trim() }
-        ]
-      });
+        ],
+        0.5
+      );
       let auditReport = "";
       for await (const chunk of stream) {
         const text2 = chunk.choices[0]?.delta?.content || "";
