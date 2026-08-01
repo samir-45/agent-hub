@@ -642,27 +642,23 @@ export default function ModelDetail() {
                         <p className="text-xs text-muted-foreground">Send a message to begin chatting</p>
                       </div>
                     ) : (
-                      <div className="space-y-5 pb-4 min-w-0 w-full overflow-hidden">
+                      <div className="max-w-4xl mx-auto space-y-6 pb-4 w-full px-3">
                       {messages.map((msg, i) => (
                         <div
                           key={i}
-                          className={`flex gap-3 animate-slide-up min-w-0 w-full overflow-hidden ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                          className={`flex gap-3 animate-slide-up w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start items-start'}`}
                         >
+                          {msg.role === 'assistant' && (
+                            <div className="shrink-0 h-7 w-7 rounded-xl flex items-center justify-center text-xs shadow-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mt-0.5">
+                              <Bot className="h-3.5 w-3.5" />
+                            </div>
+                          )}
                           <div
-                            className={`shrink-0 h-7 w-7 rounded-xl flex items-center justify-center text-xs shadow-sm ${
+                            className={
                               msg.role === 'user'
-                                ? 'gradient-primary text-black font-bold'
-                                : 'bg-muted/80 text-muted-foreground border border-border/50'
-                            }`}
-                          >
-                            {msg.role === 'user' ? <User className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5" />}
-                          </div>
-                          <div
-                            className={`rounded-2xl px-4 py-3 text-sm ${
-                              msg.role === 'user'
-                                ? 'max-w-[85%] gradient-primary text-black font-medium shadow-lg shadow-emerald-500/10'
-                                : 'flex-1 min-w-0 max-w-full overflow-hidden bg-card/60 text-foreground border border-border/40'
-                            }`}
+                                ? 'max-w-[80%] rounded-2xl px-4 py-2.5 text-sm gradient-primary text-black font-medium shadow-md shadow-emerald-500/10'
+                                : 'flex-1 min-w-0 text-sm text-foreground overflow-hidden space-y-2'
+                            }
                           >
                             {msg.role === 'user' ? (
                               <span className="whitespace-pre-wrap">{msg.content}</span>
@@ -711,6 +707,11 @@ export default function ModelDetail() {
                               </div>
                             ) : null}
                           </div>
+                          {msg.role === 'user' && (
+                            <div className="shrink-0 h-7 w-7 rounded-xl flex items-center justify-center text-xs shadow-sm gradient-primary text-black font-bold mt-0.5">
+                              <User className="h-3.5 w-3.5" />
+                            </div>
+                          )}
                         </div>
                       ))}
                       <div ref={messagesEndRef} />
@@ -718,8 +719,8 @@ export default function ModelDetail() {
                     )}
                   </ScrollArea>
 
-                  <div className="shrink-0 pt-3 border-t border-border/30 mt-3">
-                    <div className="flex gap-2 items-end glass-card rounded-2xl p-2">
+                  <div className="shrink-0 pt-3 border-t border-border/30 mt-3 w-full">
+                    <div className="max-w-4xl mx-auto flex gap-2 items-end glass-card rounded-2xl p-2 shadow-xl border border-border/50">
                       <Textarea
                         ref={textareaRef}
                         placeholder="Type a message… (Enter to send, Shift+Enter for newline)"
