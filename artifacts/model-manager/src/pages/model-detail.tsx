@@ -642,7 +642,7 @@ export default function ModelDetail() {
                         <p className="text-xs text-muted-foreground">Send a message to begin chatting</p>
                       </div>
                     ) : (
-                      <div className="max-w-4xl mx-auto space-y-6 pb-4 w-full px-3">
+                      <div className="w-full space-y-5 pb-4 min-w-0 overflow-hidden">
                       {messages.map((msg, i) => (
                         <div
                           key={i}
@@ -656,8 +656,8 @@ export default function ModelDetail() {
                           <div
                             className={
                               msg.role === 'user'
-                                ? 'max-w-[80%] rounded-2xl px-4 py-2.5 text-sm gradient-primary text-black font-medium shadow-md shadow-emerald-500/10'
-                                : 'flex-1 min-w-0 text-sm text-foreground overflow-hidden space-y-2'
+                                ? 'w-fit max-w-[80%] rounded-2xl px-4 py-2.5 text-sm gradient-primary text-black font-medium shadow-md shadow-emerald-500/10'
+                                : 'w-fit max-w-[88%] min-w-0 rounded-2xl px-4 py-3 text-sm bg-card/60 text-foreground border border-border/40 shadow-sm overflow-hidden'
                             }
                           >
                             {msg.role === 'user' ? (
@@ -720,7 +720,7 @@ export default function ModelDetail() {
                   </ScrollArea>
 
                   <div className="shrink-0 pt-3 border-t border-border/30 mt-3 w-full">
-                    <div className="max-w-4xl mx-auto flex gap-2 items-end glass-card rounded-2xl p-2 shadow-xl border border-border/50">
+                    <div className="w-full flex gap-2 items-end glass-card rounded-2xl p-2 shadow-xl border border-border/50">
                       <Textarea
                         ref={textareaRef}
                         placeholder="Type a message… (Enter to send, Shift+Enter for newline)"
